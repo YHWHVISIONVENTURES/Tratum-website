@@ -1,0 +1,28 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "@id": "https://tratum-website.vercel.app/#organization",
+  "name": "Tratum Inc.",
+  "legalName": "YHWH Vision Ventures Technologies Ltd.",
+  "url": "https://tratum-website.vercel.app/",
+  "description": "Tratum is a financial infrastructure technology company building secure physical and digital infrastructure that enables regulated financial institutions to extend banking, commerce and financial participation into markets constrained by connectivity, power and conventional banking infrastructure.",
+  "founder": {
+    "@type": "Person",
+    "name": "Segun Ademigoke",
+    "url": "https://tratum-website.vercel.app/founder.html"
+  },
+  "areaServed": {
+    "@type": "Place",
+    "name": "Africa"
+  },
+  "knowsAbout": [
+    "Financial infrastructure",
+    "Banking infrastructure",
+    "Offline financial infrastructure",
+    "Agency banking",
+    "Financial inclusion infrastructure",
+    "Secure financial hardware",
+    "Embedded financial firmware",
+    "Transaction ledger infrastructure"
+  ]
+}

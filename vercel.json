@@ -1,0 +1,73 @@
+{
+  "version": 2,
+  "cleanUrls": false,
+  "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/sitemap.xml",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/xml; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/robots.txt",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/llms.txt",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/tratum-entity.json",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json; charset=utf-8"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/knowledge",
+      "destination": "/knowledge.html"
+    },
+    {
+      "source": "/technology",
+      "destination": "/technology.html"
+    },
+    {
+      "source": "/network-node",
+      "destination": "/network-node.html"
+    },
+    {
+      "source": "/financial-infrastructure",
+      "destination": "/financial-infrastructure.html"
+    },
+    {
+      "source": "/offline-financial-infrastructure",
+      "destination": "/offline-financial-infrastructure.html"
+    },
+    {
+      "source": "/security",
+      "destination": "/security.html"
+    },
+    {
+      "source": "/founder",
+      "destination": "/founder.html"
+    }
+  ]
+}

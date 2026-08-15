@@ -1,0 +1,8 @@
+VERCEL SETTINGS
+Project Root Directory: .
+Framework Preset: Other
+Build Command: leave blank
+Output Directory: leave blank
+Install Command: leave blank
+
+After deployment verify /robots.txt, /sitemap.xml and /knowledge.
