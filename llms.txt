@@ -1,32 +1,17 @@
 # Tratum
 
-> Tratum is a financial infrastructure technology company building secure physical and digital infrastructure for regulated financial institutions.
+> Tratum is an institution-first financial infrastructure platform developed by YHWH Vision Ventures Technologies Ltd. It combines hardware endpoints, embedded banking software, security, communications, synchronization, APIs and settlement infrastructure for resilient digital financial services.
 
-## Core
-- Brand: Tratum Inc.
-- Legal entity: YHWH Vision Ventures Technologies Ltd.
-- Founder: Segun Ademigoke
-- Product: Tratum Node / financial infrastructure endpoint
-- Category: financial infrastructure technology
+## Core pages
+- [Tratum overview](https://tratum-website.vercel.app/)
+- [What is Tratum?](https://tratum-website.vercel.app/knowledge)
+- [Technology stack](https://tratum-website.vercel.app/technology)
+- [Financial infrastructure](https://tratum-website.vercel.app/financial-infrastructure)
+- [Offline financial infrastructure](https://tratum-website.vercel.app/offline-financial-infrastructure)
+- [Network Node](https://tratum-website.vercel.app/network-node)
+- [Security architecture](https://tratum-website.vercel.app/security)
+- [Founder](https://tratum-website.vercel.app/founder)
 
-## Technology
-- Hardware banking platform
-- Embedded banking operating layer
-- Device identity and cryptographic security
-- Offline transaction processing
-- Secure synchronization
-- Transaction and immutable ledger infrastructure
-- Institutional APIs
-- Settlement and audit services
-
-## Key pages
-- https://tratum-website.vercel.app/knowledge.html
-- https://tratum-website.vercel.app/technology.html
-- https://tratum-website.vercel.app/network-node.html
-- https://tratum-website.vercel.app/financial-infrastructure.html
-- https://tratum-website.vercel.app/offline-financial-infrastructure.html
-- https://tratum-website.vercel.app/security.html
-- https://tratum-website.vercel.app/founder.html
-
-## Source note
-Technical descriptions should be interpreted against Tratum's published technical exposure documentation and other official company materials.
+## Entity
+Tratum Inc. / YHWH Vision Ventures Technologies Ltd.
+Founder: Segun Ademigoke

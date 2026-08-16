@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://tratum-website.vercel.app/</loc></url>
-  <url><loc>https://tratum-website.vercel.app/knowledge.html</loc></url>
-  <url><loc>https://tratum-website.vercel.app/technology.html</loc></url>
-  <url><loc>https://tratum-website.vercel.app/network-node.html</loc></url>
-  <url><loc>https://tratum-website.vercel.app/financial-infrastructure.html</loc></url>
-  <url><loc>https://tratum-website.vercel.app/offline-financial-infrastructure.html</loc></url>
-  <url><loc>https://tratum-website.vercel.app/security.html</loc></url>
-  <url><loc>https://tratum-website.vercel.app/founder.html</loc></url>
+  <url><loc>https://tratum-website.vercel.app/knowledge</loc></url>
+  <url><loc>https://tratum-website.vercel.app/technology</loc></url>
+  <url><loc>https://tratum-website.vercel.app/financial-infrastructure</loc></url>
+  <url><loc>https://tratum-website.vercel.app/offline-financial-infrastructure</loc></url>
+  <url><loc>https://tratum-website.vercel.app/network-node</loc></url>
+  <url><loc>https://tratum-website.vercel.app/security</loc></url>
+  <url><loc>https://tratum-website.vercel.app/founder</loc></url>
 </urlset>
