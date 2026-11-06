@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 
+router.use(require('../middleware/adminAuth'));
+router.use(require('../middleware/requirePermission')('INSTITUTIONS_MANAGE'));
 const admin = require('../controllers/adminInstitutionController');
 
 // create institution

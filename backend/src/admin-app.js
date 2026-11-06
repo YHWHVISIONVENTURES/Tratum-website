@@ -7,6 +7,7 @@ const { rateLimit } = require('express-rate-limit');
 const pool = require('./db');
 
 const app = express();
+app.use(require('./routes/runtimeRoutes'));
 const allowedOrigins = (process.env.ADMIN_UI_ORIGIN || 'http://localhost:5173')
   .split(',')
   .map((origin) => origin.trim())
@@ -29,6 +30,7 @@ app.use('/admin/v1/auth/login', rateLimit({
   message: { ok: false, error: 'TOO_MANY_LOGIN_ATTEMPTS' }
 }));
 
+app.use('/admin', require('./routes/adminInstitutionRoutes'));
 app.use(require('./routes/adminAuthRoutes'));
 app.use(require('./routes/adminDashboardRoutes'));
 app.use(require('./routes/deviceIntakeRoutes'));
@@ -75,4 +77,5 @@ start().catch(async (error) => {
   await pool.end();
   process.exit(1);
 });
+
 

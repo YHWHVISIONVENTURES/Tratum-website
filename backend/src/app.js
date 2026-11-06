@@ -115,6 +115,7 @@ require('./routes/portalDashboardRoutes');
 // =======================================================
 
 const app = express();
+app.use(require('./routes/runtimeRoutes'));
 
 const server =
 http.createServer(app);
@@ -312,3 +313,4 @@ async function boot() {
 // =======================================================
 
 boot();
+
