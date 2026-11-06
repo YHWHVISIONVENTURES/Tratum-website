@@ -1,0 +1,8 @@
+﻿node_modules/
+admin-ui/node_modules/
+admin-ui/dist/
+.env
+.env.*
+!.env.example
+keys/root_private.pem
+*.log
