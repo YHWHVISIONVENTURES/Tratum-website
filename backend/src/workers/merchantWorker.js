@@ -1,3 +1,4 @@
+const { monitoredInterval } = require('../services/monitoredInterval');
 const pool = require('../db');
 const { settleValue } = require('../services/fxOracle');
 const { resolveRoute } = require('../services/routingEngine');
@@ -79,8 +80,9 @@ async function tick() {
 
 function start() {
   if (interval) return;
-  interval = setInterval(tick, 5000);
+  interval = monitoredInterval('merchantWorker', tick, 5000);
   console.log('[MERCHANT WORKER] ACTIVE');
 }
 
 module.exports = { start };
+

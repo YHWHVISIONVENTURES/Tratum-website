@@ -1,0 +1,5 @@
+const test=require('node:test');const assert=require('node:assert/strict');const vm=require('node:vm');const fs=require('node:fs');
+function setup(callback){const intervals=[],events=[];const box={module:{exports:{}},require:()=>({observe:async(n,p)=>events.push(p)}),console:{error(){}},setInterval(fn){intervals.push(fn);return{unref(){}};}};vm.runInNewContext(fs.readFileSync(require.resolve('../src/services/monitoredInterval'),'utf8'),box);box.module.exports.monitoredInterval('test',callback,100);return{intervals,events};}
+test('monitor records heartbeat and completed cycle',async()=>{const s=setup(async()=>{});await s.intervals[1]();assert.deepEqual(s.events,['heartbeat','started','completed']);});
+test('monitor records rejected cycle',async()=>{const s=setup(async()=>{throw Error('failure');});await s.intervals[1]();assert.equal(s.events.at(-1),'failed');});
+test('monitor skips overlapping cycles',async()=>{let release;const s=setup(()=>new Promise(r=>release=r));const first=s.intervals[1]();await Promise.resolve();await s.intervals[1]();assert.equal(s.events.filter(x=>x==='started').length,1);release();await first;});

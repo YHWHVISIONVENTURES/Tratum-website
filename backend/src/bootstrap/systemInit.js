@@ -4,7 +4,7 @@
 // =======================================================
 
 const sovereignMetricsEngine =
-require('../analytics/sovereignMetricsEngine');
+require('../engines/sovereignMetricsEngine');
 
 const snapshotPipelineEngine =
 require('../analytics/snapshotPipelineEngine');

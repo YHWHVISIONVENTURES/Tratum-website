@@ -1,3 +1,5 @@
+const { monitoredInterval } = require('../services/monitoredInterval');
+const { observe } = require('../services/workerObservation');
 const pool = require('../db');
 const { registerFinality, confirm } = require('../services/routeFinalityEngine');
 const { recordRevenue } = require('../services/revenueLedger'); // 1. IMPORT REVENUE LEDGER
@@ -109,6 +111,7 @@ async function hasLiquidity(row) { return true; } // Placeholder
 async function tick() {
   if (workerLock) return;
   workerLock = true;
+  await observe('interbank', 'started');
   try {
     const result = await fetchPending();
     for (const row of result.rows) {
@@ -119,7 +122,9 @@ async function tick() {
         console.log(`[INTERBANK FAILED] ${row.settlement_id}:`, err.message);
       }
     }
+    await observe('interbank', 'completed');
   } catch (err) {
+    await observe('interbank', 'failed');
     console.log('[INTERBANK WORKER ERROR]', err.message);
   } finally {
     workerLock = false;
@@ -128,8 +133,9 @@ async function tick() {
 
 function start() {
   if (interval) return;
-  interval = setInterval(tick, 15000);
+  interval = monitoredInterval('interbankWorker', tick, 15000);
   console.log('[INTERBANK WORKER] ACTIVE');
 }
 
 module.exports = { start };
+

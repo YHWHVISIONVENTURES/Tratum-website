@@ -89,7 +89,7 @@ async function buildInstitutionEconomics({
 
       railActivity,
 
-      liquidityFlow,
+      liquidityFlowResult,
 
       deviceUtilization,
 
@@ -407,7 +407,7 @@ async function buildInstitutionEconomics({
 
     const liquidityFlow =
       num(
-        liquidityFlow.rows[0]
+        liquidityFlowResult.rows[0]
           ?.liquidity_flow
       );
 

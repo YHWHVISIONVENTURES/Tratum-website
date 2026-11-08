@@ -1,30 +1,23 @@
 const WebSocket = require('ws');
+const jwt = require('jsonwebtoken');
+const analytics = require('../analytics/analyticsEngine');
 
-const {
-  getLatestAnalyticsSnapshot
-} = require('./analyticsSnapshotReader');
-
-const {
-  getTreasuryPressureState
-} = require('./treasuryPressureEngine');
-
-const {
-  getRevenueVelocityState
-} = require('./revenueVelocityEngine');
-
-const {
-  getNodeHealthState
-} = require('./nodeHealthAnalytics');
-
-const {
-  getCorridorFlowState
-} = require('./corridorFlowEngine');
+// Read the existing live analytics implementations; no replacement calculations.
+const getLatestAnalyticsSnapshot = async () => {
+  await analytics.refreshAll();
+  return analytics.getSnapshot();
+};
+const getTreasuryPressureState = analytics.computeTreasuryPressure.bind(analytics);
+const getRevenueVelocityState = analytics.computeRevenueMetrics.bind(analytics);
+const getNodeHealthState = analytics.computeNodeMetrics.bind(analytics);
+const getCorridorFlowState = analytics.computeCorridorMetrics.bind(analytics);
 
 // ======================================================
 // GLOBAL WS STATE
 // ======================================================
 
 let wss = null;
+let broadcastTimer = null;
 
 const channels = {
   OPS: new Set(),
@@ -90,7 +83,7 @@ function resolveRole(roleCode) {
       return 'INSTITUTION';
 
     default:
-      return 'OPS';
+      return null;
   }
 }
 
@@ -249,8 +242,22 @@ async function broadcastLoop() {
 
 function initWebsocketFeedEngine(server) {
 
+  if (wss) return;
   wss = new WebSocket.Server({
-    server
+    server,
+    verifyClient(info, done) {
+      try {
+        const auth = info.req.headers.authorization;
+        if (typeof auth !== 'string' || !auth.startsWith('Bearer ')) return done(false, 401);
+        const claims = jwt.verify(auth.slice(7), process.env.ADMIN_JWT_SECRET);
+        const role = resolveRole(claims.role);
+        const permissions = { OPS: 'OPS_VIEW', TREASURY: 'TREASURY_VIEW', SECURITY: 'SECURITY_VIEW', NODES: 'NODES_VIEW' };
+        if (!role || !permissions[role] || !Array.isArray(claims.permissions) || !claims.permissions.includes(permissions[role])) return done(false, 403);
+        info.req.feedRole = role;
+        info.req.feedExpiry = claims.exp;
+        return done(true);
+      } catch { return done(false, 401); }
+    }
   });
 
   console.log(
@@ -263,11 +270,10 @@ function initWebsocketFeedEngine(server) {
 
       try {
 
-        const role =
-          req.headers['x-role'];
-
-        const resolved =
-          resolveRole(role);
+        const resolved = req.feedRole;
+        const remaining = Math.max(0, req.feedExpiry * 1000 - Date.now());
+        const expiry = setTimeout(() => ws.close(1008, 'Session expired'), Math.min(remaining, 2147483647));
+        ws.on('close', () => clearTimeout(expiry));
 
         registerClient(
           ws,
@@ -296,12 +302,15 @@ function initWebsocketFeedEngine(server) {
   // LIVE FEED LOOP
   // ------------------------------------------
 
-  setInterval(
+  broadcastTimer = setInterval(
     broadcastLoop,
     5000
   );
 }
 
-module.exports = {
-  initWebsocketFeedEngine
-};
+function shutdown() {
+  clearInterval(broadcastTimer); broadcastTimer = null;
+  if (wss) { for (const ws of wss.clients) ws.terminate(); wss.close(); wss = null; }
+  for (const set of Object.values(channels)) set.clear();
+}
+module.exports = { initWebsocketFeedEngine, initialize: initWebsocketFeedEngine, shutdown };

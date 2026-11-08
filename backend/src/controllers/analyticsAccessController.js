@@ -9,7 +9,7 @@ const {
 
 const {
   buildSovereignMetrics
-} = require('../analytics/sovereignMetricsEngine');
+} = require('../engines/sovereignMetricsEngine');
 
 const {
   buildTreasuryIntelligence

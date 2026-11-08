@@ -1,3 +1,5 @@
+const { monitoredInterval } = require('../services/monitoredInterval');
+const { observe } = require('../services/workerObservation');
 const pool = require('../db');
 
 // Import existing domain engines (already built in your system)
@@ -274,6 +276,7 @@ await registerFinality({
 // WORKER LOOP
 // -------------------------------------
 async function tick() {
+  await observe('rail-dispatcher', 'started');
   try {
 
     const result = await fetchPending();
@@ -281,8 +284,10 @@ async function tick() {
     for (const tx of result.rows) {
       await dispatch(tx);
     }
+    await observe('rail-dispatcher', 'completed');
 
   } catch (err) {
+    await observe('rail-dispatcher', 'failed');
     console.error('[RAIL WORKER ERROR]', err.message);
   }
 }
@@ -294,9 +299,10 @@ function start() {
 
   if (interval) return;
 
-  interval = setInterval(tick, 5000);
+  interval = monitoredInterval('railDispatcherWorker', tick, 5000);
 
   console.log('[RAIL DISPATCHER WORKER] ACTIVE');
 }
 
 module.exports = { start };
+

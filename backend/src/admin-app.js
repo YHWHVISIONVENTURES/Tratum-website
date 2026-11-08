@@ -7,7 +7,7 @@ const { rateLimit } = require('express-rate-limit');
 const pool = require('./db');
 
 const app = express();
-app.use(require('./routes/runtimeRoutes'));
+
 const allowedOrigins = (process.env.ADMIN_UI_ORIGIN || 'http://localhost:5173')
   .split(',')
   .map((origin) => origin.trim())
@@ -21,6 +21,9 @@ app.use(cors({
   }
 }));
 app.use(express.json({ limit: '32kb' }));
+app.use(require('./routes/runtimeRoutes'));
+app.use(require('./routes/bankSessionRoutes'));
+app.use(require('./routes/deviceFeatureRoutes'));
 
 app.use('/admin/v1/auth/login', rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -77,5 +80,4 @@ start().catch(async (error) => {
   await pool.end();
   process.exit(1);
 });
-
 

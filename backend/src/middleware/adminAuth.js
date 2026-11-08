@@ -23,6 +23,7 @@ module.exports = function adminAuth(req, res, next) {
       process.env.ADMIN_JWT_SECRET
     );
 
+    if (decoded.scope === 'bank' || decoded.aud === 'tratum-bank') return res.status(403).json({error:'ACCESS_DENIED'});
     req.admin = decoded;
 
     next();

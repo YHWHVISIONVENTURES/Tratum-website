@@ -1,3 +1,4 @@
+const { monitoredInterval } = require('../services/monitoredInterval');
 const pool = require('../db');
 const { charge } = require('../services/feeEngine');
 
@@ -172,7 +173,7 @@ function start() {
 
   if (interval) return;
 
-  interval = setInterval(
+  interval = monitoredInterval('institutionBillingWorker', 
     runMonthlyBilling,
     3600000
   ); // hourly check

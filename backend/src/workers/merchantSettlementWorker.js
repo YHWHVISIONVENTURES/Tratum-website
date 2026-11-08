@@ -1,4 +1,5 @@
-const { processMerchantSettlements } = require('../services/merchantSettlementEngine');
+const { monitoredInterval } = require('../services/monitoredInterval');
+const { processMerchantSettlements } = require('../services/merchantsSettlementEngine');
 
 let interval = null;
 
@@ -13,8 +14,9 @@ async function tick() {
 function start() {
   if (interval) return;
   // Run every 15 seconds
-  interval = setInterval(tick, 15000);
+  interval = monitoredInterval('merchantSettlementWorker', tick, 15000);
   console.log('[MERCHANT_SETTLEMENT_WORKER] ACTIVE (15s Pulse)');
 }
 
 module.exports = { start };
+

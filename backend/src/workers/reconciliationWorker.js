@@ -1,6 +1,7 @@
+const { monitoredInterval } = require('../services/monitoredInterval');
 const { runReconciliation } = require('../services/reconciliationEngine');
 // 🛡️ NEW IMPORTS
-const { snapshotTreasuryBalances } = require('../services/treasurySnapshotEngine');
+const { snapshotTreasuryBalances } = require('../services/treasuryBalanceSnapshotEngine');
 const { computeFXExposure } = require('../services/fxExposureEngine');
 
 let interval = null;
@@ -41,9 +42,10 @@ function start() {
   if (interval) return;
 
   // Checks once every hour
-  interval = setInterval(tick, 60 * 60 * 1000);
+  interval = monitoredInterval('reconciliationWorker', tick, 60 * 60 * 1000);
 
   console.log('[RECONCILIATION WORKER] ACTIVE');
 }
 
 module.exports = { start };
+

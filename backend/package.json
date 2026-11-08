@@ -5,7 +5,8 @@
   "main": "src/admin-app.js",
   "scripts": {
     "test": "node --test",
-    "start": "node src/admin-app.js"
+    "start": "node src/admin-app.js",
+    "start:workers": "node src/app.js"
   },
   "keywords": [],
   "author": "",

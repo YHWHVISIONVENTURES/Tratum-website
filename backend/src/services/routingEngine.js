@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { validateSovereignPolicy } = require('./sovereignPolicyEngine');
 
 const {
   resolveRate
@@ -7,7 +8,7 @@ const {
 const {
   checkTreasuryLiquidity,
   reserveLiquidity
-} = require('./treasuryPoolEngine');
+} = require('../engines/treasuryPoolEngine');
 
 const {
   resolveRail
@@ -134,12 +135,12 @@ async function resolveRoute({
 
 const sourceRails =
   await resolveCountryRails({
-    country_code: source_country
+    country_code: source_country, client
   });
 
 const destinationRails =
   await resolveCountryRails({
-    country_code: destination_country
+    country_code: destination_country, client
   });
 
   let route =
@@ -203,7 +204,9 @@ if (
 
       preferred_rail,
 
-      corridor,
+      corridor: route,
+      sourceRails,
+      destinationRails,
 
       online_state,
 
@@ -267,36 +270,7 @@ if (
 // DYNAMIC RAIL RESOLUTION
 // ======================================================
 
-let selectedRail =
-  route.preferred_rail;
-
-const papssRail =
-  sourceRails.find(
-    r => r.rail_code === 'PAPSS'
-  );
-
-const stableRail =
-  sourceRails.find(
-    r => r.rail_type === 'STABLECOIN'
-  );
-
-const cbdcRail =
-  sourceRails.find(
-    r => r.rail_type === 'CBDC'
-  );
-
-if (
-  papssRail &&
-  destinationRails.length
-) {
-  selectedRail = 'PAPSS';
-}
-else if (cbdcRail) {
-  selectedRail = 'CBDC';
-}
-else if (stableRail) {
-  selectedRail = 'STABLECOIN';
-}
+const selectedRail = rail.rail_code;
 
   // -------------------------------------
   // ROUTE OBJECT
@@ -307,7 +281,7 @@ else if (stableRail) {
 
     rail: selectedRail,
     asset:
-      policy.preferred_asset,
+      route.preferred_asset,
 
     source_country,
     destination_country,

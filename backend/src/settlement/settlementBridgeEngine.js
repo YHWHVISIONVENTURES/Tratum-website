@@ -5,9 +5,7 @@ const { postTreasuryEntry } =
   require('../services/treasuryEngine');
   const {
   recordCorridorMetric
-} = require(
-  './corridorHealthEngine'
-);
+} = require('../services/corridorHealthEngine');
 
 // --------------------------------------------------
 // HELPERS

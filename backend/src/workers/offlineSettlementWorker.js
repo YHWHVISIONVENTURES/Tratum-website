@@ -1,3 +1,4 @@
+const { monitoredInterval } = require('../services/monitoredInterval');
 const pool = require('../db');
 const { reconcileOfflineBatch } = require('../services/offlineReconciler');
 
@@ -21,7 +22,7 @@ async function runWorker() {
 function start() {
   if (interval) return;
 
-  interval = setInterval(runWorker, 10000);
+  interval = monitoredInterval('offlineSettlementWorker', runWorker, 10000);
 
   console.log("[OFFLINE WORKER] ACTIVE");
 }

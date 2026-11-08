@@ -7,7 +7,7 @@ const pool = require('../db');
 
 const {
   buildSovereignMetrics
-} = require('./sovereignMetricsEngine');
+} = require('../engines/sovereignMetricsEngine');
 
 // =======================================================
 // SNAPSHOT WINDOWS

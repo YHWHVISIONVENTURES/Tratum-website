@@ -1,3 +1,4 @@
+const { monitoredInterval } = require('../services/monitoredInterval');
 const { runSettlementBridge } =
   require('../settlement/settlementBridgeEngine');
 
@@ -30,7 +31,7 @@ function start() {
 
   if (interval) return;
 
-  interval = setInterval(
+  interval = monitoredInterval('settlementBridgeWorker', 
     tick,
     10000 // every 10s
   );

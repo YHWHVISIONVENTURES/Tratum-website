@@ -1,3 +1,4 @@
+const { monitoredInterval } = require('../services/monitoredInterval');
 // =====================================================
 // SETTLEMENT FINALITY WORKER (HARDENED)
 // =====================================================
@@ -115,7 +116,7 @@ function start() {
 
   if (interval) return;
 
-  interval = setInterval(tick, 20000);
+  interval = monitoredInterval('settlementFinalityWorker', tick, 20000);
 
   console.log('[SETTLEMENT FINALITY WORKER] ACTIVE');
 }

@@ -1,3 +1,4 @@
+const { monitoredInterval } = require('../services/monitoredInterval');
 const pool = require('../db');
 let interval=null;
 
@@ -20,7 +21,7 @@ async function tick() {
 
 function start(){
  if(interval) return;
- interval = setInterval(tick,30000);
+ interval = monitoredInterval('revenueDistributionWorker', tick,30000);
  console.log('[REVENUE WORKER] ACTIVE');
 }
 

@@ -1,3 +1,4 @@
+const { monitoredInterval } = require('../services/monitoredInterval');
 const pool = require('../db');
 
 let interval = null;
@@ -43,9 +44,10 @@ function start() {
   if (interval) return;
 
   // Checks every hour if it is midnight yet
-  interval = setInterval(tick, 60 * 60 * 1000);
+  interval = monitoredInterval('nodeReconciliationWorker', tick, 60 * 60 * 1000);
 
   console.log('[NODE RECON WORKER] ACTIVE (Midnight Schedule)');
 }
 
 module.exports = { start };
+

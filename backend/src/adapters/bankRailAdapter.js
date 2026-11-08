@@ -14,6 +14,7 @@ class BankRailAdapter {
   }
 
   async sendTransfer({ from, to, amount, reference }) {
+    if (typeof reference !== 'string' || !/^[A-Za-z0-9_.:-]{1,128}$/.test(reference)) throw new Error('INVALID_TRANSFER_REFERENCE');
     const payload = {
       from,
       to,
@@ -30,10 +31,12 @@ class BankRailAdapter {
       {
         headers: {
           'Content-Type': 'application/json',
+          'Idempotency-Key': reference,
           'x-api-key': this.config.apiKey,
           'x-signature': signature
         },
-        timeout: 15000
+        timeout: 15000,
+        maxRedirects: 0
       }
     );
 

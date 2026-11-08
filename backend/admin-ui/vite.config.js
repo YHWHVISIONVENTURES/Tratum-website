@@ -1,4 +1,4 @@
-﻿import { defineConfig } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
@@ -7,7 +7,9 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/admin': 'http://localhost:3000',
+      '/bank/v1': 'http://localhost:3000',
       '/health': 'http://localhost:3000'
     }
   }
 });
+

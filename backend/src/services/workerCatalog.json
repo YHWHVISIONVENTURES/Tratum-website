@@ -1,0 +1,15 @@
+[
+  "globalRootWorker",
+  "institutionBillingWorker",
+  "interbankWorker",
+  "merchantSettlementWorker",
+  "merchantWorker",
+  "nodeReconciliationWorker",
+  "offlineSettlementWorker",
+  "railDispatcherWorker",
+  "reconciliationWorker",
+  "revenueDistributionWorker",
+  "settlementBridgeWorker",
+  "settlementFinalityWorker",
+  "taxRemittanceWorker"
+]

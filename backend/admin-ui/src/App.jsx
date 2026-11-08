@@ -1,3 +1,4 @@
+import BankPage from './pages/BankPage';
 import RuntimePage from './pages/RuntimePage';
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
@@ -17,7 +18,7 @@ import DeviceIntakesPage from './pages/DeviceIntakesPage';
 export default function App() {
   return (
     <AuthProvider>
-      <Routes>
+      <Routes><Route path="/bank" element={<BankPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/admin" element={<ProtectedRoute><Shell /></ProtectedRoute>}>
           <Route index element={<Navigate to="ops" replace />} />
@@ -35,5 +36,6 @@ export default function App() {
     </AuthProvider>
   );
 }
+
 
 

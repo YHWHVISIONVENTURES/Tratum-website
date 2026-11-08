@@ -1,3 +1,4 @@
+const { monitoredInterval } = require('../services/monitoredInterval');
 // ==========================================================
 // FILE: /workers/taxRemittanceWorker.js
 // TRATUM — TAX REMITTANCE WORKER
@@ -82,6 +83,7 @@ async function runRemittance() {
 
       const rows =
         grouped[taxType];
+      const ids = rows.map(r => r.id);
 
       const total =
         rows.reduce(
@@ -139,8 +141,7 @@ async function runRemittance() {
       });
 
       // 2. MARK TAXES REMITTED (Existing Code)
-      const ids = rows.map(r => r.id);
-      await client.query(`UPDATE tax_transactions SET tax_status='REMITTED' ...`, [ids]);
+
 
       // ----------------------------------------------------
       // CREATE REMITTANCE BATCH
@@ -178,10 +179,7 @@ async function runRemittance() {
       // ----------------------------------------------------
       // MARK TAXES REMITTED
       // ----------------------------------------------------
-      const ids =
-        rows.map(r => r.id);
-
-      await client.query(
+await client.query(
         `
         UPDATE tax_transactions
         SET
@@ -290,7 +288,7 @@ function start() {
 
   if (interval) return;
 
-  interval = setInterval(
+  interval = monitoredInterval('taxRemittanceWorker', 
     tick,
     60 * 1000
   );
@@ -303,3 +301,6 @@ function start() {
 module.exports = {
   start
 };
+
+
+

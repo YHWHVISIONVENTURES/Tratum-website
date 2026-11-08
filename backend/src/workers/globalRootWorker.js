@@ -1,3 +1,4 @@
+const { monitoredInterval } = require('../services/monitoredInterval');
 const pool = require('../db');
 const { buildGlobalRoot } = require('../services/globalRootAggregator');
 
@@ -38,7 +39,7 @@ function start() {
 
   if (interval) return;
 
-  interval = setInterval(tick, 15000); // every 15s
+  interval = monitoredInterval('globalRootWorker', tick, 15000); // every 15s
 
   console.log('[GLOBAL ROOT WORKER] ACTIVE');
 }

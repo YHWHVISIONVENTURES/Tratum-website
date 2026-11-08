@@ -1,17 +1,16 @@
 const express = require('express');
 const router = express.Router();
 
-router.use(require('../middleware/adminAuth'));
-router.use(require('../middleware/requirePermission')('INSTITUTIONS_MANAGE'));
+const authorize = [require('../middleware/adminAuth'), require('../middleware/requirePermission')('INSTITUTIONS_MANAGE')];
 const admin = require('../controllers/adminInstitutionController');
 
 // create institution
-router.post('/institutions', admin.createInstitution);
+router.post('/institutions', ...authorize, admin.createInstitution);
 
 // list institutions
-router.get('/institutions', admin.listInstitutions);
+router.get('/institutions', ...authorize, admin.listInstitutions);
 
 // disable institution
-router.patch('/institutions/:id/disable', admin.disableInstitution);
+router.patch('/institutions/:id/disable', ...authorize, admin.disableInstitution);
 
 module.exports = router;
