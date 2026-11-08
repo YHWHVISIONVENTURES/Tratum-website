@@ -1,6 +1,11 @@
 const express = require('express');
 const router = express.Router();
 
+// Legacy intake lacked device-signature verification and must not bypass V2.
+router.use(['/api/transaction','/api/sync','/api/offline/batch','/api/settlement/proof',
+ '/api/settlement/verify/ca','/api/settlement/verify/local','/node/state','/ledger'],
+ (req,res) => res.status(410).json({ok:false,error:'USE_SIGNED_DEVICE_V2_API'}));
+
 const test = require('../controllers/syncController');
 console.log("SHARING THESE FUNCTIONS:", Object.keys(test));
 

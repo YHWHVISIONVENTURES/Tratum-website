@@ -8,7 +8,7 @@ const {
   postTreasuryEntry
 } = require('./treasuryEngine');
 
-const { lockFunds } = require('../services/treasuryLocksEngine'); // 👈 ADD IMPORT
+const { lockFunds } = require('./treasuryLocksEngine');
 
 // ----------------------------------------------------------
 // CREDIT RESERVE

@@ -7,7 +7,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/admin': 'http://localhost:3000',
-      '/bank/v1': 'http://localhost:3000',
+      '/portal': 'http://localhost:3000',
       '/health': 'http://localhost:3000'
     }
   }

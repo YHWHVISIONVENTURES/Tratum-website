@@ -6,7 +6,7 @@ let owned=true;
 const queries=[];
 const db={async query(sql,args){
  queries.push(sql);
- if(sql.startsWith('SELECT 1 FROM devices')) return {rows:owned?[{}]:[]};
+ if(sql.startsWith('SELECT 1 FROM device_sync_registry_v2')) return {rows:owned?[{}]:[]};
  const key=args[1];
  if(sql.startsWith('INSERT')) {
   const composite=`${args[1]}:${args[3]}`;

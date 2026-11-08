@@ -14,9 +14,9 @@ function generateApiKey(namePrefix) {
 // =====================================
 exports.createInstitution = async (req, res) => {
   try {
-    const { name, type, public_key } = req.body;
+    const { name, type, public_key, country_code } = req.body;
 
-    if (!name || !type) {
+    if (typeof name !== 'string' || !name.trim() || name.length > 200 || !['BANK','CENTRAL_BANK','FINTECH','ENTERPRISE'].includes(type) || (country_code && !/^[A-Z]{2,3}$/.test(country_code)) || (public_key !== undefined && public_key !== null && typeof public_key !== 'string')) {
       return res.status(400).json({ ok: false, error: "NAME_AND_TYPE_REQUIRED" });
     }
 
@@ -27,10 +27,10 @@ exports.createInstitution = async (req, res) => {
     // 2. INSERT HASHED KEY INTO DB
     const result = await pool.query(
       `INSERT INTO institutions
-       (name, type, api_key, public_key, status)
-       VALUES ($1, $2, $3, $4, 'active')
-       RETURNING id, name, type, created_at`,
-      [name, type, hashedKey, public_key || null]
+       (name, type, api_key, public_key, country_code, status)
+       VALUES ($1, $2, $3, $4, $5, 'active')
+       RETURNING institution_id AS id, name, type, created_at`,
+      [name, type, hashedKey, public_key || null, country_code || null]
     );
 
     // 3. RETURN RAW KEY ONLY ONCE
@@ -41,7 +41,7 @@ exports.createInstitution = async (req, res) => {
     });
 
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message });
+    return res.status(500).json({ ok: false, error: 'INSTITUTION_OPERATION_UNAVAILABLE' });
   }
 };
 
@@ -52,12 +52,12 @@ exports.disableInstitution = async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query(
-      `UPDATE institutions SET status='disabled' WHERE id=$1`,
+      `UPDATE institutions SET status='disabled' WHERE institution_id=$1`,
       [id]
     );
     return res.json({ ok: true, status: "DISABLED" });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message });
+    return res.status(500).json({ ok: false, error: 'INSTITUTION_OPERATION_UNAVAILABLE' });
   }
 };
 
@@ -67,10 +67,10 @@ exports.disableInstitution = async (req, res) => {
 exports.listInstitutions = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, name, type, status, created_at FROM institutions ORDER BY id ASC`
+      `SELECT institution_id AS id, name, type, status, created_at FROM institutions ORDER BY id ASC`
     );
     return res.json(result.rows);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'INSTITUTION_OPERATION_UNAVAILABLE' });
   }
 };

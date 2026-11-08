@@ -30,9 +30,7 @@ async function processDeferredSettlements() {
 
     await cleanupStaleLocks();
 
-
-
-  const pending =
+const pending =
     await pool.query(
       `
       SELECT *

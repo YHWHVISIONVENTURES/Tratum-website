@@ -103,7 +103,10 @@ async function finalize(row) {
   console.log(`[INTERBANK SETTLED] ${row.settlement_id} | Fee: ${fees.total_fee}`);
 }
 
-async function hasLiquidity(row) { return true; } // Placeholder
+async function hasLiquidity(row) {
+  // A verified reservation and settlement contract is required before financial finality.
+  throw new Error('INTERBANK_LIQUIDITY_RESERVATION_NOT_IMPLEMENTED');
+}
 
 // -----------------------------------
 // WORKER LOOP & START
@@ -138,4 +141,5 @@ function start() {
 }
 
 module.exports = { start };
+
 

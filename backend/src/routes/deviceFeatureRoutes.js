@@ -17,7 +17,7 @@ router.post('/institution/v1/device-features/:kind',async(req,res)=>{
  const hash=fingerprint(kind,payload);
  try {
   // The API credential determines the tenant; the caller cannot choose it.
-  const device=await pool.query('SELECT 1 FROM devices WHERE device_id=$1 AND issuer_id::text=$2',[payload.device_id,institution]);
+  const device=await pool.query("SELECT 1 FROM device_sync_registry_v2 WHERE device_id=$1 AND institution_id=$2 AND status='ACTIVE' AND expires_at>clock_timestamp()",[payload.device_id,institution]);
   if (!device.rows.length) return res.status(404).json({error:'DEVICE_NOT_FOUND'});
   const inserted=await pool.query(`INSERT INTO device_feature_requests
    (id,institution_id,device_id,idempotency_key,request_hash,kind,payload)

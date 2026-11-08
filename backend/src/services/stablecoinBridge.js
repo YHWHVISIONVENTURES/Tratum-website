@@ -90,8 +90,9 @@ async function stableLoad(payload) {
     assertAmount(amount);
 
     await client.query('BEGIN');
+    await require('../services/deviceLifecycle').assertCurrentTrust(client,device_id);
 
-    const trust = await pool.query(
+    const trust = await client.query(
  `
  SELECT
    attestation_status,
@@ -289,8 +290,9 @@ async function stableSpend(payload) {
     assertAmount(amount);
 
     await client.query('BEGIN');
+    await require('../services/deviceLifecycle').assertCurrentTrust(client,device_id);
 
-    const trust = await pool.query(
+    const trust = await client.query(
  `
  SELECT
    attestation_status,
@@ -463,6 +465,7 @@ async function stableRedeem(payload) {
     assertAmount(amount);
 
     await client.query('BEGIN');
+    await require('../services/deviceLifecycle').assertCurrentTrust(client,device_id);
 
     // -------------------------------------
     // LOCK BALANCE

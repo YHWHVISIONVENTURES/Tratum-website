@@ -55,7 +55,7 @@ async function rebalancePool({
   to_account,
   currency_code,
   amount,
-  currency_code,
+  country_code,
   reason = 'AUTO_REBALANCE',
   metadata = {},
   client: externalClient = null
@@ -155,6 +155,7 @@ async function autoRebalance() {
           to_account: row.account_code,
           currency_code: row.currency_code,
           amount: deficit,
+          country_code: row.country_code,
           reason: 'AUTO_LIQUIDITY_REBALANCE',
           metadata: { policy_id: row.id, net_at_time: availableLiquidity },
           client 

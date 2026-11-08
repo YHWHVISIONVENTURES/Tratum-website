@@ -1,0 +1,134 @@
+{
+  "read_only": true,
+  "method": "PREPARE only; no financial SQL was executed",
+  "checked": 160,
+  "valid": 142,
+  "errors": [
+    {
+      "file": "services/billingEngine.js",
+      "line": 275,
+      "code": "42P01",
+      "message": "relation \"settlement_history\" does not exist",
+      "sql": "INSERT INTO settlement_history (actor_id, total_amount, method)\n      VALUES (\n        $1,\n        (SELECT COALESCE(SUM(amount),0) FROM billing_ledger WHERE actor_id=$1),\n        'BILLING_CLEAR'\n      )"
+    },
+    {
+      "file": "services/corridorHealthEngine.js",
+      "line": 21,
+      "code": "42703",
+      "message": "column \"from_country\" of relation \"corridor_health_metrics\" does not exist",
+      "sql": "INSERT INTO corridor_health_metrics\n    (\n      from_country, to_country, \n      from_currency, to_currency, \n      rail, latency_ms, success, volume, metadata\n    )\n    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)"
+    },
+    {
+      "file": "services/corridorHealthEngine.js",
+      "line": 50,
+      "code": "42703",
+      "message": "column \"from_country\" does not exist",
+      "sql": "SELECT\n      COUNT(*)::int AS total,\n      AVG(latency_ms)::numeric(20,2) AS avg_latency,\n      SUM(CASE WHEN success=true THEN 1 ELSE 0 END)::int AS success_count\n    FROM corridor_health_metrics\n    WHERE from_country=$1 AND to_country=$2\n      AND from_currency=$3 AND to_currency=$4\n      AND rai"
+    },
+    {
+      "file": "services/fxExposureEngine.js",
+      "line": 5,
+      "code": "42703",
+      "message": "column \"country_code\" does not exist",
+      "sql": "SELECT\n    country_code,\n      currency_code,\n\n      SUM(\n        CASE\n          WHEN direction='CREDIT'\n          THEN amount\n          ELSE -amount\n        END\n      ) AS reserves\n\n    FROM treasury_ledger\n    GROUP BY country_code, currency_code"
+    },
+    {
+      "file": "services/fxExposureEngine.js",
+      "line": 27,
+      "code": "42703",
+      "message": "column \"amount\" does not exist",
+      "sql": "SELECT\n          COALESCE(\n            SUM(amount),\n            0\n          ) AS locked\n        FROM treasury_liquidity_locks\n        WHERE source_currency=$1\n        AND country_code=$2\n        AND status='LOCKED'"
+    },
+    {
+      "file": "services/fxExposureEngine.js",
+      "line": 46,
+      "code": "42703",
+      "message": "column \"total_reserves\" of relation \"fx_exposure\" does not exist",
+      "sql": "INSERT INTO fx_exposure\n      (\n        country_code,\n        currency_code,\n        total_reserves,\n        locked_reserves,\n        net_exposure,\n        exposure_status,\n        captured_at\n      )\n      VALUES ($1,$2,$3,$4,$5, NOW())"
+    },
+    {
+      "file": "services/offlineReconciler.js",
+      "line": 50,
+      "code": "42703",
+      "message": "column \"device_id\" of relation \"security_events\" does not exist",
+      "sql": "INSERT INTO security_events (device_id, event_code, metadata)\n         VALUES ($1, 'REPLAY_BLOCKED', $2)"
+    },
+    {
+      "file": "services/p2pIngestionEngine.js",
+      "line": 331,
+      "code": "42703",
+      "message": "column \"issuer_id\" does not exist",
+      "sql": "SELECT COUNT(*)::int AS count\n      FROM transactions\n      WHERE issuer_id = $1\n      AND created_at > NOW() - INTERVAL '10 seconds'"
+    },
+    {
+      "file": "services/p2pIngestionEngine.js",
+      "line": 366,
+      "code": "42703",
+      "message": "column \"issuer_id\" of relation \"transactions\" does not exist",
+      "sql": "INSERT INTO transactions (\n        tx_hash,\n        sender_id,\n        receiver_id,\n        amount,\n        timestamp,\n        nonce,\n        issuer_id,\n        status,\n        synced,\n        raw_payload,\n        settlement_status,\n        economic_event_id\n      )\n      VALUES (\n        $1,$2,$3,$"
+    },
+    {
+      "file": "services/p2pIngestionEngine.js",
+      "line": 500,
+      "code": "42703",
+      "message": "column \"economic_snapshot\" of relation \"transactions\" does not exist",
+      "sql": "UPDATE transactions\n      SET economic_snapshot = $1\n      WHERE tx_hash = $2"
+    },
+    {
+      "file": "services/routeFinalityEngine.js",
+      "line": 136,
+      "code": "42P18",
+      "message": "could not determine data type of parameter $2",
+      "sql": "UPDATE route_finality\n     SET status='FAILED',\n         metadata =\n         COALESCE(metadata,'{}'::jsonb)\n         || jsonb_build_object('reason',$2),\n         updated_at=NOW()\n     WHERE reference=$1"
+    },
+    {
+      "file": "services/treasuryLocksEngine.js",
+      "line": 96,
+      "code": "42703",
+      "message": "column \"source_country\" of relation \"treasury_locks\" does not exist",
+      "sql": "INSERT INTO treasury_locks\n      (\n        lock_id,\n        account_code,\n        currency_code,\n        amount,\n        available_balance_snapshot,\n        economic_event_id,\n        reference,\n        source_type,\n        source_country,\n        destination_country,\n        lock_reason,\n        in"
+    },
+    {
+      "file": "services/treasuryNettingEngine.js",
+      "line": 20,
+      "code": "42703",
+      "message": "column \"route_snapshot\" does not exist",
+      "sql": "SELECT\n      SUM(source_amount)\n        AS gross_debit,\n\n      SUM(destination_amount)\n        AS gross_credit\n\n    FROM treasury_liquidity_locks\n    WHERE status='SETTLED'\n    AND route_snapshot->>'from_country'=$1\n    AND route_snapshot->>'to_country'=$2"
+    },
+    {
+      "file": "services/treasuryNettingEngine.js",
+      "line": 98,
+      "code": "42703",
+      "message": "column \"updated_at\" of relation \"treasury_liquidity_locks\" does not exist",
+      "sql": "UPDATE treasury_liquidity_locks\n         SET status='NETTED', updated_at=NOW()\n         WHERE economic_event_id=$1"
+    },
+    {
+      "file": "services/treasuryNettingEngine.js",
+      "line": 106,
+      "code": "42703",
+      "message": "column \"updated_at\" of relation \"treasury_liquidity_locks\" does not exist",
+      "sql": "UPDATE treasury_liquidity_locks\n         SET status='RELEASED', updated_at=NOW()\n         WHERE economic_event_id=$1"
+    },
+    {
+      "file": "settlement/settlementBridgeEngine.js",
+      "line": 43,
+      "code": "42601",
+      "message": "syntax error at or near \"AND\"",
+      "sql": "SELECT *\n      FROM settlement_intents\n      WHERE status='PENDING'\n      AND settlement_type='BILLING'\n      ORDER BY created_at ASC\n      LIMIT 100\n      FOR UPDATE SKIP LOCKED;\n        AND settlement_lock_id IS NULL\n        AND created_at <= NOW() - INTERVAL '1 minute'\n      ORDER BY created_at A"
+    },
+    {
+      "file": "settlement/settlementBridgeEngine.js",
+      "line": 284,
+      "code": "42703",
+      "message": "column \"metadata\" of relation \"settlement_bridge\" does not exist",
+      "sql": "INSERT INTO settlement_bridge (\n            settlement_id,\n            reference,\n            institution_id,\n            amount,\n            status,\n            processed_at,\n            metadata\n          )\n          VALUES ($1,$2,$3,$4,'CONFIRMED',NOW(),$5)\n          ON CONFLICT (settlement_id) D"
+    },
+    {
+      "file": "settlement/settlementBridgeEngine.js",
+      "line": 364,
+      "code": "42703",
+      "message": "column \"metadata\" of relation \"settlement_bridge\" does not exist",
+      "sql": "INSERT INTO settlement_bridge (\n            settlement_id,\n            reference,\n            institution_id,\n            amount,\n            status,\n            metadata\n          )\n          VALUES ($1,$2,$3,$4,'FAILED',$5)\n          ON CONFLICT (settlement_id) DO NOTHING"
+    }
+  ]
+}

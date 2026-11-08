@@ -1,0 +1,46 @@
+name: Tratum backend
+on:
+  push:
+    paths: ['backend/**', '.github/workflows/backend.yml']
+  pull_request:
+    paths: ['backend/**', '.github/workflows/backend.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        schema: [fresh, legacy]
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: tratum_test
+          POSTGRES_DB: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ['55439:5432']
+        options: >-
+          --health-cmd "pg_isready -U tratum_test -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            backend/admin-ui/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run test:e2e
+        env:
+          TRATUM_TEST_LEGACY_SCHEMA: "${{ matrix.schema == 'legacy' && '1' || '0' }}"
+      - run: npm ci
+        working-directory: backend/admin-ui
+      - run: npm run build
+        working-directory: backend/admin-ui

@@ -5,7 +5,7 @@ module.exports = async function institutionAuth(req, res, next) {
   try {
     const apiKey = req.headers['x-api-key'];
 
-    if (!apiKey) {
+    if (typeof apiKey !== 'string' || !apiKey || apiKey.length>512) {
       return res.status(401).json({ error: 'MISSING_API_KEY' });
     }
 
@@ -15,7 +15,7 @@ module.exports = async function institutionAuth(req, res, next) {
       .digest('hex');
 
     const result = await pool.query(
-      `SELECT * FROM institutions WHERE api_key=$1 AND status='active'`,
+      `SELECT *, institution_id AS id FROM institutions WHERE api_key=$1 AND status='active'`,
       [hashed]
     );
 
@@ -24,9 +24,10 @@ module.exports = async function institutionAuth(req, res, next) {
     }
 
     req.institution = result.rows[0];
+    try {await require('../services/fleetAccess').assertLicense(pool,req.institution.id,{requiredProduct:'API'});}catch{return res.status(403).json({error:'INSTITUTION_ACCESS_INACTIVE'});}
     next();
 
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(503).json({ error: 'INSTITUTION_AUTH_UNAVAILABLE' });
   }
 };
