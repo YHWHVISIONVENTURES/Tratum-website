@@ -16,7 +16,7 @@ exports.createInstitution = async (req, res) => {
   try {
     const { name, type, public_key } = req.body;
 
-    if (!name || !type) {
+    if (typeof name !== 'string' || !name.trim() || name.length > 200 || !['BANK','CENTRAL_BANK','FINTECH'].includes(type) || (public_key !== undefined && public_key !== null && typeof public_key !== 'string')) {
       return res.status(400).json({ ok: false, error: "NAME_AND_TYPE_REQUIRED" });
     }
 
@@ -41,7 +41,7 @@ exports.createInstitution = async (req, res) => {
     });
 
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message });
+    return res.status(500).json({ ok: false, error: 'INSTITUTION_OPERATION_UNAVAILABLE' });
   }
 };
 
@@ -57,7 +57,7 @@ exports.disableInstitution = async (req, res) => {
     );
     return res.json({ ok: true, status: "DISABLED" });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message });
+    return res.status(500).json({ ok: false, error: 'INSTITUTION_OPERATION_UNAVAILABLE' });
   }
 };
 
@@ -71,6 +71,6 @@ exports.listInstitutions = async (req, res) => {
     );
     return res.json(result.rows);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'INSTITUTION_OPERATION_UNAVAILABLE' });
   }
 };

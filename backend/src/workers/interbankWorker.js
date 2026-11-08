@@ -1,3 +1,4 @@
+const { observe } = require('../services/workerObservation');
 const pool = require('../db');
 const { registerFinality, confirm } = require('../services/routeFinalityEngine');
 const { recordRevenue } = require('../services/revenueLedger'); // 1. IMPORT REVENUE LEDGER
@@ -101,7 +102,10 @@ async function finalize(row) {
   console.log(`[INTERBANK SETTLED] ${row.settlement_id} | Fee: ${fees.total_fee}`);
 }
 
-async function hasLiquidity(row) { return true; } // Placeholder
+async function hasLiquidity(row) {
+  // A verified reservation and settlement contract is required before financial finality.
+  throw new Error('INTERBANK_LIQUIDITY_RESERVATION_NOT_IMPLEMENTED');
+}
 
 // -----------------------------------
 // WORKER LOOP & START
@@ -109,6 +113,7 @@ async function hasLiquidity(row) { return true; } // Placeholder
 async function tick() {
   if (workerLock) return;
   workerLock = true;
+  await observe('interbank', 'started');
   try {
     const result = await fetchPending();
     for (const row of result.rows) {
@@ -119,7 +124,9 @@ async function tick() {
         console.log(`[INTERBANK FAILED] ${row.settlement_id}:`, err.message);
       }
     }
+    await observe('interbank', 'completed');
   } catch (err) {
+    await observe('interbank', 'failed');
     console.log('[INTERBANK WORKER ERROR]', err.message);
   } finally {
     workerLock = false;

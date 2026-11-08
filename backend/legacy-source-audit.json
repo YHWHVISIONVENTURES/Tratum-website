@@ -1,0 +1,39 @@
+{
+  "checked": 161,
+  "syntax": [],
+  "missing": [
+    {
+      "file": "security\\verificationEngine.js",
+      "module": "../crypto/QuantumSecureEngine"
+    },
+    {
+      "file": "services\\payoutEngine.js",
+      "module": "./railAdapterRegistry"
+    },
+    {
+      "file": "services\\realtimeStateEngine.js",
+      "module": "./analyticsSnapshotReader"
+    },
+    {
+      "file": "services\\realtimeStateEngine.js",
+      "module": "./treasuryPressureEngine"
+    },
+    {
+      "file": "services\\realtimeStateEngine.js",
+      "module": "./revenueVelocityEngine"
+    },
+    {
+      "file": "services\\realtimeStateEngine.js",
+      "module": "./nodeHealthAnalytics"
+    },
+    {
+      "file": "services\\realtimeStateEngine.js",
+      "module": "./corridorFlowEngine"
+    },
+    {
+      "file": "services\\routingEngine.js",
+      "module": "./railResolver"
+    }
+  ],
+  "caseMismatches": []
+}

@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const pool = require('../db');
-const { loadRootCa, signPayload, verifyPayload } = require('../security/rootCa');
+const { loadRootCa, signPayload, verifyPayload } = require('../security/rootCA');
 
 const {
   deriveDeviceId

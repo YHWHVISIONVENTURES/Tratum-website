@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('node:fs');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 const express = require('express');
@@ -7,20 +8,26 @@ const { rateLimit } = require('express-rate-limit');
 const pool = require('./db');
 
 const app = express();
-app.use(require('./routes/runtimeRoutes'));
-const allowedOrigins = (process.env.ADMIN_UI_ORIGIN || 'http://localhost:5173')
+
+const allowedOrigins = [process.env.ADMIN_UI_ORIGIN || 'http://localhost:5173', process.env.PORTAL_ORIGIN || ''].join(',')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
 app.disable('x-powered-by');
 app.use(cors({
+  credentials: true,
   origin(origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error('CORS_ORIGIN_DENIED'));
   }
 }));
 app.use(express.json({ limit: '32kb' }));
+app.use(require('./routes/runtimeRoutes'));
+app.use(require('./routes/deviceFeatureRoutes'));
+app.use(require('./routes/deviceDeltaRoutes'));
+app.use(require('./routes/institutionPortalRoutes'));
+app.use(require('./routes/webhookRoutes'));
 
 app.use('/admin/v1/auth/login', rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -44,10 +51,18 @@ app.get('/health', async (req, res) => {
   }
 });
 
+const uiDirectory=path.resolve(__dirname,'../admin-ui/dist');
+if(fs.existsSync(path.join(uiDirectory,'index.html'))) {
+  app.use(express.static(uiDirectory,{index:false}));
+  app.get(['/bank','/login','/admin','/admin/network','/admin/runtime','/admin/ops','/admin/treasury','/admin/nodes','/admin/institutions','/admin/security','/admin/billing','/admin/logs','/admin/device-intakes'],(req,res)=>{
+    res.set('Cache-Control','no-store');res.sendFile(path.join(uiDirectory,'index.html'));
+  });
+}
+
 app.use((error, req, res, next) => {
   if (res.headersSent) return next(error);
-  const status = error.message === 'CORS_ORIGIN_DENIED' ? 403 : 500;
-  return res.status(status).json({ ok: false, error: status === 403 ? 'ORIGIN_NOT_ALLOWED' : 'INTERNAL_SERVER_ERROR' });
+  const status = error.message === 'CORS_ORIGIN_DENIED' ? 403 : error.type === 'entity.parse.failed' ? 400 : error.type === 'entity.too.large' ? 413 : 500;
+  return res.status(status).json({ ok: false, error: status === 403 ? 'ORIGIN_NOT_ALLOWED' : status === 400 ? 'INVALID_JSON' : status === 413 ? 'PAYLOAD_TOO_LARGE' : 'INTERNAL_SERVER_ERROR' });
 });
 
 const port = Number(process.env.PORT || 3000);
@@ -72,10 +87,10 @@ async function start() {
   process.once('SIGTERM', shutdown);
 }
 
-start().catch(async (error) => {
+module.exports = { app, start };
+
+if (require.main === module) start().catch(async (error) => {
   console.error('[TRATUM ADMIN API] Startup failed:', error.message);
   await pool.end();
   process.exit(1);
 });
-
-

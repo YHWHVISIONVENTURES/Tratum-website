@@ -20,7 +20,7 @@ const security =
 require('../controllers/portalSecurityController');
 
 const logs =
-require('../controllers/portalLogsController');
+require('../controllers/PortalLogsController');
 
 router.get('/portal/dashboard/overview', auth, sign, overview.getOverview);
 router.get('/portal/dashboard/billing', auth, sign, billing.getBilling);

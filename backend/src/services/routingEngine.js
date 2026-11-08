@@ -7,7 +7,7 @@ const {
 const {
   checkTreasuryLiquidity,
   reserveLiquidity
-} = require('./treasuryPoolEngine');
+} = require('../engines/treasuryPoolEngine');
 
 const {
   resolveRail

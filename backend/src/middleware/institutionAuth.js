@@ -5,7 +5,7 @@ module.exports = async function institutionAuth(req, res, next) {
   try {
     const apiKey = req.headers['x-api-key'];
 
-    if (!apiKey) {
+    if (typeof apiKey !== 'string' || !apiKey || apiKey.length>512) {
       return res.status(401).json({ error: 'MISSING_API_KEY' });
     }
 
@@ -27,6 +27,6 @@ module.exports = async function institutionAuth(req, res, next) {
     next();
 
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(503).json({ error: 'INSTITUTION_AUTH_UNAVAILABLE' });
   }
 };

@@ -21,7 +21,7 @@ const {
   resolveTreasuryPool
 } = require('../services/treasuryRoutingEngine');
 
-const { releaseFunds } = require('../services/treasuryLockEngine');
+const { releaseFunds } = require('../services/treasuryLocksEngine');
 
 // ----------------------------------------------------------
 // WORKER
@@ -30,11 +30,7 @@ async function processDeferredSettlements() {
 
     await cleanupStaleLocks();
 
-  const pending = await pool.query(
-    `SELECT * FROM deferred_settlement_queue WHERE status='PENDING' ...`
-  );
-
-  const pending =
+const pending =
     await pool.query(
       `
       SELECT *

@@ -6,3 +6,5 @@ admin-ui/dist/
 !.env.example
 keys/root_private.pem
 *.log
+work/
+test/e2e-keys-*/

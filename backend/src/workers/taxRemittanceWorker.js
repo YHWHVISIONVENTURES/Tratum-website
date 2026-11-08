@@ -125,23 +125,6 @@ async function runRemittance() {
       // =====================================================
       // 💸 2. SOVEREIGN PAYOUT QUEUE (INJECT HERE)
       // =====================================================
-      await queuePayout({
-        actor_id: 'SOVEREIGN_NG', // Matches your wiring requirement
-        actor_type: 'SOVEREIGN',
-        payout_type: 'TAX_REMITTANCE',
-        source_type: 'TAX_ENGINE',
-        source_reference: batchId,
-        economic_event_id: batchId, // Using batchId as anchor
-        currency_code: 'NGN',
-        amount: total,
-        metadata: { jurisdiction: 'NG', tax_type: taxType },
-        client: client // 🛡️ ATOMIC
-      });
-
-      // 2. MARK TAXES REMITTED (Existing Code)
-      const ids = rows.map(r => r.id);
-      await client.query(`UPDATE tax_transactions SET tax_status='REMITTED' ...`, [ids]);
-
       // ----------------------------------------------------
       // CREATE REMITTANCE BATCH
       // ----------------------------------------------------

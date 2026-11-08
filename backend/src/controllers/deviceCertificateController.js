@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const pool = require('../db');
-const { loadRootCa, signPayload, verifyPayload } = require('../security/rootCa');
+const { loadRootCa, signPayload, verifyPayload } = require('../security/rootCA');
 
 function isValidDeviceId(deviceId) {
   return typeof deviceId === 'string' && /^[A-Fa-f0-9]{16}$/.test(deviceId);

@@ -1,4 +1,4 @@
-const { processMerchantSettlements } = require('../services/merchantSettlementEngine');
+const { processMerchantSettlements } = require('../services/merchantsSettlementEngine');
 
 let interval = null;
 

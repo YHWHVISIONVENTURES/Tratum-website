@@ -19,7 +19,7 @@ export default function LoginPage() {
   if (token) {
     return (
       <Navigate
-        to="/admin/ops"
+        to="/admin/network"
         replace
       />
     );

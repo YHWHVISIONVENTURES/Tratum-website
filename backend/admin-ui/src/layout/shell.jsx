@@ -23,7 +23,7 @@ import {
   ScrollText
 } from 'lucide-react';
 
-const menu = [{to:'/admin/runtime', label:'Infrastructure', icon:Cpu},
+const menu = [{to:'/admin/network', label:'Network command', icon:LayoutDashboard},{to:'/admin/runtime', label:'Infrastructure', icon:Cpu},
   {
     to: '/admin/ops',
     label: 'Ops',

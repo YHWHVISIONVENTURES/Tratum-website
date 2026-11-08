@@ -1,4 +1,6 @@
 import RuntimePage from './pages/RuntimePage';
+import BankPortalPage from './pages/BankPortalPage';
+import NetworkPage from './pages/NetworkPage';
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -18,9 +20,11 @@ export default function App() {
   return (
     <AuthProvider>
       <Routes>
+        <Route path="/bank" element={<BankPortalPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/admin" element={<ProtectedRoute><Shell /></ProtectedRoute>}>
-          <Route index element={<Navigate to="ops" replace />} />
+          <Route index element={<Navigate to="network" replace />} />
+          <Route path="network" element={<NetworkPage />} />
           <Route path="runtime" element={<RuntimePage />} /><Route path="ops" element={<OpsPage />} />
           <Route path="treasury" element={<TreasuryPage />} />
           <Route path="nodes" element={<NodesPage />} />
@@ -30,7 +34,7 @@ export default function App() {
           <Route path="institutions" element={<InstitutionsPage />} />
           <Route path="logs" element={<LogsPage />} />
         </Route>
-        <Route path="*" element={<Navigate to="/admin/ops" replace />} />
+        <Route path="*" element={<Navigate to="/admin/network" replace />} />
       </Routes>
     </AuthProvider>
   );

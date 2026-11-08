@@ -11,11 +11,7 @@ exports.login = async (req, res) => {
 
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ ok: false, error: 'EMAIL_AND_PASSWORD_REQUIRED' });
-    }
-
-    if (!email || !password) {
+    if (typeof email !== 'string' || email.length>254 || typeof password !== 'string' || Buffer.byteLength(password)>72 || !password) {
       return res.status(400).json({ ok: false, error: 'EMAIL_AND_PASSWORD_REQUIRED' });
     }
 
@@ -68,7 +64,7 @@ exports.login = async (req, res) => {
         permissions
       },
       process.env.ADMIN_JWT_SECRET,
-      { expiresIn:'12h' }
+      { expiresIn:'12h', algorithm:'HS256' }
     );
 
     await pool.query(
@@ -78,6 +74,7 @@ exports.login = async (req, res) => {
       [row.id]
     );
 
+    res.set('Cache-Control','no-store');
     return res.json({
       ok:true,
       token,

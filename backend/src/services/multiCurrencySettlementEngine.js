@@ -28,7 +28,7 @@ const {
 
 } = require('./countryResolutionEngine');
 
-const { reserveLiquidity } = require('./treasuryPoolEngine');
+const { reserveLiquidity } = require('../engines/treasuryPoolEngine');
 
 // ----------------------------------------------------------
 // HELPERS
