@@ -27,6 +27,8 @@ app.use(require('./routes/runtimeRoutes'));
 app.use(require('./routes/deviceFeatureRoutes'));
 app.use(require('./routes/deviceDeltaRoutes'));
 app.use(require('./routes/institutionPortalRoutes'));
+app.use(require('./routes/deviceLifecycleRoutes'));
+app.use(require('./routes/commandCenterRoutes'));
 app.use(require('./routes/webhookRoutes'));
 
 app.use('/admin/v1/auth/login', rateLimit({
@@ -50,11 +52,12 @@ app.get('/health', async (req, res) => {
     return res.status(503).json({ status: 'unavailable', database: 'disconnected' });
   }
 });
+app.get('/',(req,res)=>res.redirect('/admin/network'));
 
 const uiDirectory=path.resolve(__dirname,'../admin-ui/dist');
 if(fs.existsSync(path.join(uiDirectory,'index.html'))) {
   app.use(express.static(uiDirectory,{index:false}));
-  app.get(['/bank','/login','/admin','/admin/network','/admin/runtime','/admin/ops','/admin/treasury','/admin/nodes','/admin/institutions','/admin/security','/admin/billing','/admin/logs','/admin/device-intakes'],(req,res)=>{
+  app.get(['/bank','/institution','/enterprise','/central-bank','/login','/admin','/admin/network','/admin/runtime','/admin/ops','/admin/treasury','/admin/nodes','/admin/institutions','/admin/security','/admin/billing','/admin/logs','/admin/device-intakes'],(req,res)=>{
     res.set('Cache-Control','no-store');res.sendFile(path.join(uiDirectory,'index.html'));
   });
 }
@@ -72,11 +75,20 @@ async function start() {
     throw new Error('ADMIN_JWT_SECRET is required');
   }
   await pool.query('SELECT 1');
-  const server = app.listen(port, () => {
-    console.log(`[TRATUM ADMIN API] Listening on ${port}`);
+  const bindHost=process.env.TRATUM_BIND_HOST || '127.0.0.1';
+  const server=await new Promise((resolve,reject)=>{
+    const candidate=app.listen(port,bindHost,()=>resolve(candidate));candidate.once('error',reject);
   });
+  console.log(`[TRATUM CONTROL PLANE] Listening on http://${bindHost}:${port}`);
+  const {observe}=require('./services/workerObservation');
+  let checking=false;
+  async function check(){if(checking)return;checking=true;await observe('control-plane-health','started');try{await pool.query('SELECT 1');await observe('control-plane-health','completed');}catch{await observe('control-plane-health','failed');}finally{checking=false;}}
+  await check();
+  const heartbeat=setInterval(check,15000);
+  server.once('close',()=>clearInterval(heartbeat));
 
   async function shutdown() {
+    clearInterval(heartbeat);
     server.close(async () => {
       await pool.end();
       process.exit(0);
@@ -85,6 +97,7 @@ async function start() {
 
   process.once('SIGINT', shutdown);
   process.once('SIGTERM', shutdown);
+  return server;
 }
 
 module.exports = { app, start };

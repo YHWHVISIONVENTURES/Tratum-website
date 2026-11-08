@@ -13,7 +13,7 @@ router.use('/device/v2',rateLimit({windowMs:60000,limit:120,standardHeaders:true
 function fail(res,error) {
  const codes={ROOT_CA_UNAVAILABLE:503,DEVICE_NOT_FOUND:403,DEVICE_NOT_ACTIVE:403,CERTIFICATE_EXPIRED:403,
   INVALID_SIGNATURE:403,CHALLENGE_EXPIRED:403,CHALLENGE_USED:409,DEVICE_ALREADY_ENROLLED:409,
-  CURSOR_CONFLICT:409,KEY_EPOCH_MISMATCH:409};
+  CURSOR_CONFLICT:409,KEY_EPOCH_MISMATCH:409,ERA_ACK_REQUIRED:409,LICENSE_NODE_LIMIT:403,ENTERPRISE_LICENSE_INACTIVE:403,FEATURE_NOT_LICENSED:403,LEGACY_IDENTITY_CONFLICT:409};
  const status=codes[error.message] || (error.message.startsWith('INVALID_') || error.message==='UNRELATED_RECORD' || error.message==='INDEX_OVERFLOW'?400:error.code==='23505'?409:503);
  return res.status(status).json({ok:false,error:status===503?'DEVICE_SERVICE_UNAVAILABLE':status===409&&error.code==='23505'?'RECORD_CONFLICT':error.message});
 }
@@ -23,7 +23,7 @@ router.post('/admin/v2/device-enrollment/challenges',adminAuth,permission('DEVIC
   const id=codec.deviceId(pub);
   const institution=String(req.body?.institution_id || '');
   if(!institution || institution.length>128) return res.status(400).json({error:'INVALID_INSTITUTION'});
-  const issuer=await pool.query("SELECT id FROM institutions WHERE id::text=$1 AND status='active'",[institution]);
+  const issuer=await pool.query("SELECT institution_id AS id FROM institutions WHERE institution_id::text=$1 AND status='active'",[institution]);
   if(!issuer.rowCount) return res.status(404).json({error:'INSTITUTION_NOT_FOUND'});
   const challenge=crypto.randomBytes(32).toString('hex');
   const inserted=await pool.query(`INSERT INTO device_enrollment_challenges_v2
@@ -41,11 +41,12 @@ router.post('/device/v2/enroll',enrollmentLimit,async(req,res)=>{
   codec.hex(req.body?.challenge,32,'CHALLENGE');codec.hex(req.body?.signature,64,'SIGNATURE');
   const root=loadRootCa();
   client=await pool.connect();await client.query('BEGIN');
+  await require('../services/deviceLifecycle').currentEra(client);
   const found=await client.query(`SELECT *,expires_at>clock_timestamp() AS fresh
    FROM device_enrollment_challenges_v2 WHERE challenge=$1 FOR UPDATE`,[req.body.challenge]);
   const challenge=found.rows[0];
   if(!challenge || !challenge.fresh) throw new Error('CHALLENGE_EXPIRED');
-  const issuer=await client.query("SELECT 1 FROM institutions WHERE id::text=$1 AND status='active' FOR SHARE",[challenge.institution_id]);
+  const issuer=await client.query("SELECT 1 FROM institutions WHERE institution_id::text=$1 AND status='active' FOR SHARE",[challenge.institution_id]);
   if(!issuer.rowCount) throw new Error('DEVICE_NOT_ACTIVE');
   if(!codec.verifySignature(codec.enrollmentMessage(challenge.challenge,challenge.public_key,challenge.institution_id),req.body.signature,challenge.public_key)) throw new Error('INVALID_SIGNATURE');
   const existing=await client.query(`SELECT *,expires_at>clock_timestamp() AS fresh FROM device_sync_registry_v2 WHERE device_id=$1 FOR UPDATE`,[challenge.device_id]);
@@ -57,6 +58,7 @@ router.post('/device/v2/enroll',enrollmentLimit,async(req,res)=>{
    return res.json({ok:true,certificate:device.certificate,recovered:true});
   }
   if(challenge.consumed_at) throw new Error('CHALLENGE_USED');
+  await require('../services/fleetAccess').assertLicense(client,challenge.institution_id,{reserveNode:true});
   const issued=Math.floor(Date.now()/1000),expires=issued+365*86400;
   const legacyBody=Buffer.concat([Buffer.from(challenge.public_key,'hex'),Buffer.from(challenge.device_id,'hex')]);
   const signedBody=Buffer.concat([Buffer.from('TRATUM-CERT-V2\0'),legacyBody,codec.sha(Buffer.from(challenge.institution_id)),codec.uint(0,'EPOCH'),codec.uint(issued,'ISSUED'),codec.uint(expires,'EXPIRY')]);
@@ -66,6 +68,7 @@ router.post('/device/v2/enroll',enrollmentLimit,async(req,res)=>{
    firmware_certificate:Buffer.concat([legacyBody,signPayload(legacyBody,root.privateKey)]).toString('hex')};
   await client.query(`INSERT INTO device_sync_registry_v2(device_id,public_key,institution_id,certificate,expires_at)
    VALUES($1,$2,$3,$4,to_timestamp($5))`,[challenge.device_id,challenge.public_key,challenge.institution_id,certificate,expires]);
+  await require('../services/deviceLifecycle').mirrorEnrollment(client,challenge,certificate);
   await client.query('UPDATE device_enrollment_challenges_v2 SET consumed_at=clock_timestamp() WHERE challenge=$1',[challenge.challenge]);
   await client.query("INSERT INTO device_provision_audit_v2(actor_id,action,device_id) VALUES($1,'ENROLLED',$2)",[challenge.created_by,challenge.device_id]);
   await client.query('COMMIT');
@@ -79,6 +82,7 @@ router.post('/device/v2/deltas',async(req,res)=>{
   const encoded=codec.encodeDelta(req.body);
   codec.hex(req.body.signature,64,'SIGNATURE');
   client=await pool.connect();await client.query('BEGIN');
+  const policy=await require('../services/deviceLifecycle').currentEra(client);
   // Serializes competing uploads and revocation for this device.
   const found=await client.query(`SELECT *,expires_at>clock_timestamp() AS fresh
    FROM device_sync_registry_v2 WHERE device_id=$1 FOR UPDATE`,[req.body.device_id]);
@@ -86,8 +90,10 @@ router.post('/device/v2/deltas',async(req,res)=>{
   if(!device) throw new Error('DEVICE_NOT_FOUND');
   if(device.status!=='ACTIVE') throw new Error('DEVICE_NOT_ACTIVE');
   if(!device.fresh) throw new Error('CERTIFICATE_EXPIRED');
+  if(Number(device.era_no)!==policy.era_no)throw new Error('ERA_ACK_REQUIRED');
+  await require('../services/fleetAccess').assertLicense(client,device.institution_id,{requiredProduct:'TELEMETRY'});
   if(Number(device.key_epoch)!==req.body.key_epoch) throw new Error('KEY_EPOCH_MISMATCH');
-  const issuer=await client.query("SELECT 1 FROM institutions WHERE id::text=$1 AND status='active' FOR SHARE",[device.institution_id]);
+  const issuer=await client.query("SELECT 1 FROM institutions WHERE institution_id::text=$1 AND status='active' FOR SHARE",[device.institution_id]);
   if(!issuer.rowCount) throw new Error('DEVICE_NOT_ACTIVE');
   if(!codec.verifySignature(encoded.message,req.body.signature,device.public_key)) throw new Error('INVALID_SIGNATURE');
   const prior=await client.query('SELECT * FROM device_delta_batches_v2 WHERE batch_id=$1',[encoded.batchId]);
@@ -114,13 +120,17 @@ router.post('/device/v2/deltas',async(req,res)=>{
  }catch(error){if(client) await client.query('ROLLBACK').catch(()=>{});return fail(res,error);}
  finally{client?.release();}
 });
-router.post('/admin/v2/devices/:deviceId/revoke',adminAuth,permission('DEVICE_ENROLL'),async(req,res)=>{
+router.post('/admin/v2/devices/:deviceId/revoke',adminAuth,permission('TRUST_MANAGE'),async(req,res)=>{
  let client;
  try {
   codec.hex(req.params.deviceId,8,'DEVICE_ID');
   client=await pool.connect();await client.query('BEGIN');
   const found=await client.query("UPDATE device_sync_registry_v2 SET status='REVOKED' WHERE device_id=$1 RETURNING device_id",[req.params.deviceId]);
   if(!found.rowCount) throw new Error('DEVICE_NOT_FOUND');
+  await client.query("UPDATE devices SET status='REVOKED' WHERE lower(device_id)=$1",[req.params.deviceId]);
+  await client.query("UPDATE device_registry SET status='REVOKED',updated_at=now() WHERE lower(device_id)=$1",[req.params.deviceId]);
+  await client.query("UPDATE device_trust_state SET attestation_status='REVOKED',attestation_token=NULL,token_expiry=NULL WHERE lower(device_id)=$1",[req.params.deviceId]);
+  await client.query("UPDATE certificate_records SET status='REVOKED',revoked_at=extract(epoch FROM now())::bigint WHERE lower(device_id)=$1 AND status='ACTIVE'",[req.params.deviceId]);
   await client.query("INSERT INTO device_provision_audit_v2(actor_id,action,device_id) VALUES($1,'REVOKED',$2)",[String(req.admin.id),req.params.deviceId]);
   await client.query('COMMIT');return res.json({ok:true,status:'REVOKED'});
  }catch(error){if(client) await client.query('ROLLBACK').catch(()=>{});return fail(res,error);}

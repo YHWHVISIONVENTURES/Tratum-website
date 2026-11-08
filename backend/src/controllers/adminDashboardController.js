@@ -31,7 +31,7 @@ exports.getNodesDashboard = async (req, res) => {
 exports.getInstitutionsDashboard = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, name, type, status, created_at FROM institutions ORDER BY created_at DESC, id DESC`
+      `SELECT institution_id AS id, name, type, status, created_at FROM institutions ORDER BY created_at DESC, id DESC`
     );
     const institutions = result.rows;
     const active = institutions.filter((item) => String(item.status).toLowerCase() === 'active').length;

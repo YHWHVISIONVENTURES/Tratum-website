@@ -60,15 +60,17 @@ async function cycle(send=deliver) {
   leased_until=clock_timestamp()+interval '30 seconds',attempts=attempts+1
   WHERE event_id=(SELECT o.event_id FROM institution_webhook_outbox o
    JOIN institution_webhook_endpoints e USING(institution_id)
-   JOIN institutions i ON i.id::text=o.institution_id
-   WHERE e.enabled AND i.status='active' AND o.attempts<10 AND o.next_attempt_at<=clock_timestamp()
+   JOIN institutions i ON i.institution_id::text=o.institution_id
+   LEFT JOIN enterprise_accounts a ON a.institution_id=i.institution_id
+   WHERE e.enabled AND i.status='active' AND (i.type<>'ENTERPRISE' OR (a.active AND a.license_status='ACTIVE' AND a.license_expires_at>clock_timestamp() AND a.licensed_products ? 'TELEMETRY'))
+   AND o.attempts<10 AND o.next_attempt_at<=clock_timestamp()
    AND (o.status='PENDING' OR (o.status='DELIVERING' AND o.leased_until<clock_timestamp()))
    ORDER BY o.next_attempt_at FOR UPDATE OF o SKIP LOCKED LIMIT 1)
   RETURNING *`,[lease]);
  const event=claimed.rows[0];if(!event)return false;
  let status=null;
  try {
-  const endpoint=await pool.query(`SELECT e.* FROM institution_webhook_endpoints e JOIN institutions i ON i.id::text=e.institution_id
+  const endpoint=await pool.query(`SELECT e.* FROM institution_webhook_endpoints e JOIN institutions i ON i.institution_id::text=e.institution_id
    WHERE e.institution_id=$1 AND e.enabled AND i.status='active'`,[event.institution_id]);
   if(!endpoint.rowCount)throw new Error('ENDPOINT_DISABLED');
   const secret=decrypt(endpoint.rows[0].secret_ciphertext),body=JSON.stringify(event.payload),timestamp=String(Date.now());

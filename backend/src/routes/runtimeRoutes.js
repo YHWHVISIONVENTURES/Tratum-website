@@ -26,7 +26,7 @@ module.exports = router;
 router.get('/admin/v2/network',require('../middleware/adminAuth'),require('../middleware/requirePermission')('OPS_VIEW'),async(req,res,next)=>{
  try {
   const [institutions,devices,batches,webhooks]=await Promise.all([
-   pool.query(`SELECT id,name,type,status FROM institutions ORDER BY name,id LIMIT 1000`),
+   pool.query(`SELECT institution_id AS id,name,type,status FROM institutions ORDER BY name,id LIMIT 1000`),
    pool.query(`SELECT institution_id,count(*) AS total,count(*) FILTER(WHERE status='ACTIVE' AND expires_at>now()) AS active FROM device_sync_registry_v2 GROUP BY institution_id`),
    pool.query(`SELECT institution_id,count(*) AS total,max(received_at) AS latest FROM device_delta_batches_v2 GROUP BY institution_id`),
    pool.query(`SELECT institution_id,status,count(*) AS total FROM institution_webhook_outbox GROUP BY institution_id,status`)

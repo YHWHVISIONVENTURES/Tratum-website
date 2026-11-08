@@ -133,6 +133,7 @@ async function ingestP2PTransaction(tx) {
   try {
 
     await client.query('BEGIN');
+    await require('../services/deviceLifecycle').assertCurrentTrust(client,tx.senderID);
 
     // ---------------------------------------------
     // 1. IDEMPOTENCY CHECK

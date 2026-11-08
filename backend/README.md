@@ -6,7 +6,7 @@ This backend serves the operator network console, institution browser workspaces
 
 1. Install Node.js 22+, PostgreSQL 18, and dependencies with `npm ci`.
 2. Configure the database and secrets using `.env.example`. Use a dedicated application database. Set `PORTAL_ORIGIN` to the exact browser origin (scheme, hostname and port), and `ADMIN_UI_ORIGIN` to permitted operator origins. Set `NODE_ENV=production` behind HTTPS for production cookies.
-3. Run `npm run db:plan` to inspect the migrations. Back up the target database, then run `npm run db:migrate`. Migration 000 is a minimal fresh-install access schema; inspect compatibility with existing installations before applying. The runner serializes migrations, records checksums, and applies each migration atomically. It never runs automatically on server startup.
+3. Run `npm run db:plan` to inspect the migrations. Back up the target database, then run `npm run db:migrate`. Migration 000 bootstraps fresh installs; existing canonical platform tables are reused. Migrations 009–013 align the real schema and extend existing trust, license and regulator tables. The runner serializes migrations, records checksums, and applies each migration atomically. It never runs automatically on server startup.
 4. Bootstrap an operator with `TRATUM_BOOTSTRAP_PASSWORD` in the process environment, then `node scripts/bootstrap-operator.js operator@example.com`. The script never overwrites an existing operator. Remove the bootstrap variable afterward.
 5. In `admin-ui`, run `npm ci` and `npm run build`. Run `npm start` from the backend. The same server serves `/login`, `/admin/network`, `/admin/runtime`, and `/bank` when the UI build exists.
 6. For local development, run the Vite UI on port 5173 and API on 3000; set `PORTAL_ORIGIN=http://localhost:5173`. Vite proxies `/admin` and `/portal` to the API.
@@ -50,6 +50,11 @@ Webhook tests exercise the real outbox, concurrency and signature generation wit
 
 ## Remaining financial work
 
-The existing QSE code has inconsistent payment signing/verification contexts and a session-binding width mismatch; monetary state spans multiple NVS writes. These require a coordinated protocol change, recovery design and physical power-failure tests. The legacy interbank worker's unconditional liquidity approval now throws `INTERBANK_LIQUIDITY_RESERVATION_NOT_IMPLEMENTED` rather than marking unbacked settlements final. Savings and airtime/data APIs record institution-owned, idempotent requests only. Customer/device consent, actual fund reservations, provider catalogs/fulfillment/reconciliation/refunds, epoch/era lifecycle, remaining hardware/keypad flows and complete legacy engine startup are unfinished.
+The existing QSE code has inconsistent payment signing/verification contexts and a session-binding width mismatch; monetary state spans multiple NVS writes. These require a coordinated protocol change, recovery design and physical power-failure tests. The legacy interbank worker's unconditional liquidity approval now throws `INTERBANK_LIQUIDITY_RESERVATION_NOT_IMPLEMENTED` rather than marking unbacked settlements final. Savings and airtime/data APIs record institution-owned, idempotent requests only. Customer/device consent, actual fund reservations, provider catalogs/fulfillment/reconciliation/refunds, physical firmware integration of the implemented epoch/era protocol, remaining hardware/keypad flows and complete legacy engine startup are unfinished.
 
 NIGCOMSAT has not supplied the IP handoff. The existing proposal is outbound device HTTPS through a local gateway and VSAT/router backhaul. Carrier setup is not required for local API tests, but physical link validation requires that handoff. No external bank transfer API is required to test Tratum's own bank-facing evidence APIs.
+
+
+## Command centers and device lifecycle
+
+See [COMMAND_CENTER.md](docs/COMMAND_CENTER.md) for the Tratum operator, central-bank supervisory and enterprise fleet roles, the V3 wire contract, safe existing-database rollout and known financial-engine blockers. The private partnership/fundraising Site is a separate application and links to this API console.

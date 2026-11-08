@@ -11,7 +11,7 @@ const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 const loginLimit = rateLimit({ windowMs: 15*60*1000, limit: 10, standardHeaders: true, legacyHeaders: false });
 const emailValid = value => typeof value === 'string' && value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 const passwordValid = value => typeof value === 'string' && value.length >= 14 && Buffer.byteLength(value) <= 72;
-function cookieOptions() { return { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', path: '/portal/v2' }; }
+function cookieOptions() { return { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', path: '/portal' }; }
 function token(req) {
  const match = (req.headers.cookie || '').split(';').map(x=>x.trim()).find(x=>x.startsWith(cookieName+'='));
  const value = match?.slice(cookieName.length+1);
@@ -27,23 +27,25 @@ async function session(req,res,next) {
  try {
   const value=token(req);
   if(!value) return res.status(401).json({error:'LOGIN_REQUIRED'});
-  const found=await pool.query(`SELECT u.id,u.email,u.institution_id,i.name,i.type
+  const found=await pool.query(`SELECT u.id,u.email,u.institution_id,u.access_role,i.name,i.type
    FROM institution_sessions s JOIN institution_users u ON u.id=s.user_id
-   JOIN institutions i ON i.id::text=u.institution_id
+   JOIN institutions i ON i.institution_id::text=u.institution_id
    WHERE s.token_hash=$1 AND s.expires_at>clock_timestamp()
     AND u.status='ACTIVE' AND i.status='active'`,[digest(value)]);
   if(!found.rowCount) return res.status(401).json({error:'LOGIN_REQUIRED'});
+  try {await require('../services/fleetAccess').assertLicense(pool,found.rows[0].institution_id);}catch{return res.status(403).json({error:'INSTITUTION_ACCESS_INACTIVE'});}
   req.bankUser=found.rows[0]; res.set('Cache-Control','no-store'); next();
  } catch(error) { next(error); }
 }
 router.post('/admin/v2/institutions/:institutionId/users',adminAuth,permission('INSTITUTIONS_MANAGE'),async(req,res,next)=>{
  try {
-  const {email,password}=req.body || {};
+  const {email,password,access_role='VIEWER'}=req.body || {};
+  if(!['VIEWER','FLEET_OPERATOR','SUPERVISOR'].includes(access_role))return res.status(400).json({error:'INVALID_ACCESS_ROLE'});
   if(!emailValid(email) || !passwordValid(password)) return res.status(400).json({error:'VALID_EMAIL_AND_14_TO_72_BYTE_PASSWORD_REQUIRED'});
   const hash=await bcrypt.hash(password,12);
-  const found=await pool.query(`INSERT INTO institution_users(institution_id,email,password_hash)
-   SELECT id::text,$2,$3 FROM institutions WHERE id::text=$1 AND status='active'
-   RETURNING id,institution_id,email,status`,[req.params.institutionId,email.toLowerCase(),hash]);
+  const found=await pool.query(`INSERT INTO institution_users(institution_id,email,password_hash,access_role)
+   SELECT institution_id::text,$2,$3,$4 FROM institutions WHERE institution_id::text=$1 AND status='active' AND ($4<>'SUPERVISOR' OR type='CENTRAL_BANK')
+   RETURNING id,institution_id,email,status,access_role`,[req.params.institutionId,email.toLowerCase(),hash,access_role]);
   if(!found.rowCount) return res.status(404).json({error:'INSTITUTION_NOT_FOUND'});
   res.set('Cache-Control','no-store'); res.status(201).json({ok:true,user:found.rows[0]});
  } catch(error) { if(error.code==='23505') return res.status(409).json({error:'USER_EXISTS'}); next(error); }
@@ -59,12 +61,13 @@ router.post('/portal/v2/auth/login',sameOrigin,loginLimit,async(req,res,next)=>{
  try {
   const {institution_id,email,password}=req.body || {};
   if(typeof institution_id!=='string' || institution_id.length>128 || !emailValid(email) || !passwordValid(password)) return res.status(401).json({error:'INVALID_LOGIN'});
-  const found=await pool.query(`SELECT u.* FROM institution_users u JOIN institutions i ON i.id::text=u.institution_id
+  const found=await pool.query(`SELECT u.* FROM institution_users u JOIN institutions i ON i.institution_id::text=u.institution_id
    WHERE u.institution_id=$1 AND u.email=$2 AND u.status='ACTIVE' AND i.status='active'`,[institution_id,email.toLowerCase()]);
   // A real bcrypt hash makes unknown-user requests take the same expensive path.
   const fallback='$2b$12$C6UzMDM.H6dfI/f/IKcEe.5NhJkYIX/FWzlnEGB4wT0zbYKe0gA9u';
   const valid=await bcrypt.compare(password,found.rows[0]?.password_hash || fallback);
   if(!found.rowCount || !valid) return res.status(401).json({error:'INVALID_LOGIN'});
+  try{await require('../services/fleetAccess').assertLicense(pool,institution_id);}catch{return res.status(403).json({error:'INSTITUTION_ACCESS_INACTIVE'});}
   const raw=crypto.randomBytes(32).toString('hex');
   await pool.query(`INSERT INTO institution_sessions(token_hash,user_id,expires_at)
    VALUES($1,$2,clock_timestamp()+interval '8 hours')`,[digest(raw),found.rows[0].id]);
@@ -126,3 +129,5 @@ router.get('/portal/v2/devices/:deviceId/batches',async(req,res,next)=>{
  } catch(error) { next(error); }
 });
 module.exports=router;
+module.exports.session=session;
+module.exports.sameOrigin=sameOrigin;

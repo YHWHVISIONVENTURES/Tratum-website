@@ -15,7 +15,11 @@ async function main() {
    const prior=await client.query('SELECT sha256 FROM tratum_schema_migrations WHERE name=$1',[file]);
    if(prior.rowCount){if(prior.rows[0].sha256!==hash)throw new Error('MIGRATION_CHECKSUM_CHANGED: '+file);continue;}
    await client.query('BEGIN');
-   try {await client.query(sql);await client.query('INSERT INTO tratum_schema_migrations(name,sha256) VALUES($1,$2)',[file,hash]);await client.query('COMMIT');console.log('Applied '+file);}
+   try {
+    const legacy=file==='000_platform_access.sql' ? await client.query("SELECT to_regclass('public.institutions') IS NOT NULL AND to_regclass('public.admin_roles') IS NOT NULL AND to_regclass('public.admin_users') IS NOT NULL AS present") : null;
+    if(!legacy?.rows[0]?.present)await client.query(sql);
+    await client.query('INSERT INTO tratum_schema_migrations(name,sha256) VALUES($1,$2)',[file,hash]);await client.query('COMMIT');console.log((legacy?.rows[0]?.present?'Reused existing platform for ':'Applied ')+file);
+   }
    catch(error){await client.query('ROLLBACK');throw error;}
   }
  }finally{await client.query('SELECT pg_advisory_unlock(173824,1)').catch(()=>{});client.release();}

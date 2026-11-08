@@ -15,7 +15,7 @@ module.exports = async function institutionAuth(req, res, next) {
       .digest('hex');
 
     const result = await pool.query(
-      `SELECT * FROM institutions WHERE api_key=$1 AND status='active'`,
+      `SELECT *, institution_id AS id FROM institutions WHERE api_key=$1 AND status='active'`,
       [hashed]
     );
 
@@ -24,6 +24,7 @@ module.exports = async function institutionAuth(req, res, next) {
     }
 
     req.institution = result.rows[0];
+    try {await require('../services/fleetAccess').assertLicense(pool,req.institution.id,{requiredProduct:'API'});}catch{return res.status(403).json({error:'INSTITUTION_ACCESS_INACTIVE'});}
     next();
 
   } catch (err) {

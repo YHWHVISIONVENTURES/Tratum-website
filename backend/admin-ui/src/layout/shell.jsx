@@ -23,47 +23,12 @@ import {
   ScrollText
 } from 'lucide-react';
 
-const menu = [{to:'/admin/network', label:'Network command', icon:LayoutDashboard},{to:'/admin/runtime', label:'Infrastructure', icon:Cpu},
-  {
-    to: '/admin/ops',
-    label: 'Ops',
-    icon: LayoutDashboard
-  },
-  {
-    to: '/admin/treasury',
-    label: 'Treasury',
-    icon: Wallet
-  },
-  {
-    to: '/admin/nodes',
-    label: 'Nodes',
-    icon: Cpu
-  },
-  {
-    to: '/admin/device-intakes',
-    label: 'Device intake',
-    icon: UserPlus
-  },
-  {
-    to: '/admin/billing',
-    label: 'Billing',
-    icon: Receipt
-  },
-  {
-    to: '/admin/security',
-    label: 'Security',
-    icon: Shield
-  },
-  {
-    to: '/admin/institutions',
-    label: 'Institutions',
-    icon: Building2
-  },
-  {
-    to: '/admin/logs',
-    label: 'Logs',
-    icon: ScrollText
-  }
+const menu = [
+  {to:'/admin/network',label:'Network command',icon:LayoutDashboard},
+  {to:'/admin/runtime',label:'Infrastructure',icon:Cpu},
+  {to:'/admin/institutions',label:'Institutions',icon:Building2},
+  {to:'/admin/device-intakes',label:'Device intake',icon:UserPlus},
+  {to:'/admin/logs',label:'Audit logs',icon:ScrollText}
 ];
 
 export default function Shell() {
@@ -121,7 +86,7 @@ export default function Shell() {
             }}
           >
             <div className="badge">
-              AUTO REFRESH 10S
+              TRATUM CONTROL PLANE
             </div>
 
             <button

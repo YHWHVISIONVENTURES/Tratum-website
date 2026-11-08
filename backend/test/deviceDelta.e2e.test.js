@@ -27,6 +27,8 @@ test('PostgreSQL: provisioning, native delta, isolated bank sessions, signed web
   fs.writeFileSync(process.env.TRATUM_ROOT_CA_PRIVATE_KEY_PATH,root.privateKey.export({type:'pkcs8',format:'pem'}));
   fs.writeFileSync(process.env.TRATUM_ROOT_CA_CERTIFICATE_PATH,root.publicKey.export({type:'spki',format:'pem'}));
   pool=require('../src/db');
+  if(process.env.TRATUM_TEST_LEGACY_SCHEMA==='1')await pool.query(fs.readFileSync(path.join(__dirname,'fixtures/legacy-access-schema.sql'),'utf8'));
+  if(process.env.TRATUM_E2E_SCHEMA_FILE)await pool.query(fs.readFileSync(process.env.TRATUM_E2E_SCHEMA_FILE,'utf8').replace(/^\\.*$/gm,'')+'; SET search_path TO public;');
   const migrationDir=path.join(__dirname,'../migrations');
   // Exercise the deployment runner itself, including safe repeated execution.
   const migrate=path.join(__dirname,'../scripts/migrate.js');
@@ -34,9 +36,9 @@ test('PostgreSQL: provisioning, native delta, isolated bank sessions, signed web
   execFileSync(process.execPath,[migrate,'--apply'],{env:process.env,stdio:'pipe'});
   const migrationCount=await pool.query('SELECT count(*) FROM tratum_schema_migrations');
   assert.equal(Number(migrationCount.rows[0].count),fs.readdirSync(migrationDir).filter(value=>value.endsWith('.sql')).length);
-  await pool.query("INSERT INTO admin_roles VALUES('OPERATOR',$1)",[JSON.stringify(['INSTITUTIONS_MANAGE','DEVICE_ENROLL','OPS_VIEW'])]);
+  await pool.query("INSERT INTO admin_roles(role_code,role_name,permissions) VALUES('OPERATOR','Test operator',$1)",[JSON.stringify(['INSTITUTIONS_MANAGE','DEVICE_ENROLL','OPS_VIEW','TRUST_MANAGE','LICENSES_MANAGE'])]);
   const password=crypto.randomBytes(16).toString('hex');
-  await pool.query("INSERT INTO admin_users(email,password_hash,role_code,status) VALUES('operator@example.test',$1,'OPERATOR','ACTIVE')",[await bcrypt.hash(password,4)]);
+  await pool.query("INSERT INTO admin_users(email,password_hash,full_name,role_code,status) VALUES('operator@example.test',$1,'Test Operator','OPERATOR','ACTIVE')",[await bcrypt.hash(password,4)]);
   process.env.PORTAL_ORIGIN='https://portal.example.test';
   const {app}=require('../src/admin-app');
   server=app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
@@ -52,10 +54,10 @@ test('PostgreSQL: provisioning, native delta, isolated bank sessions, signed web
   const runtime=await fetch(base+'/admin/v1/dashboard/runtime',{headers:{Authorization:`Bearer ${token}`}});
   assert.equal(runtime.status,200);assert.equal((await runtime.json()).workers.items[0].status,'running');
   assert.equal((await call('/admin/institutions',{name:'Unauthorized',type:'BANK'})).status,401);
-  const bankA=await call('/admin/institutions',{name:'Bank A',type:'BANK'},token);
-  const bankB=await call('/admin/institutions',{name:'Bank B',type:'BANK'},token);
+  const bankA=await call('/admin/institutions',{name:'Bank A',type:'BANK',country_code:'NG'},token);
+  const bankB=await call('/admin/institutions',{name:'Bank B',type:'BANK',country_code:'GH'},token);
   assert.equal(bankA.status,200);assert.ok(bankA.body.api_key_raw);assert.equal(bankB.status,200);
-  const stored=await pool.query('SELECT api_key FROM institutions WHERE id=$1',[bankA.body.institution.id]);
+  const stored=await pool.query('SELECT api_key FROM institutions WHERE institution_id=$1',[bankA.body.institution.id]);
   assert.notEqual(stored.rows[0].api_key,bankA.body.api_key_raw);
   process.env.WEBHOOK_ENCRYPTION_KEY=crypto.randomBytes(32).toString('hex');
   process.env.WEBHOOK_ALLOWED_HOSTS='bank-a.example.test';
@@ -196,13 +198,14 @@ test('PostgreSQL: provisioning, native delta, isolated bank sessions, signed web
   async function feature(key,kind,payload){return fetch(base+`/institution/v1/device-features/${kind}`,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'Idempotency-Key':'feature_key_12345678'},body:JSON.stringify({device_id:cert.device_id,...payload})});}
   assert.equal((await feature(bankA.body.api_key_raw,'savings_goal',{name:'School',target_minor:'500000'})).status,202);
   assert.equal((await feature(bankB.body.api_key_raw,'airtime',{phone:'08012345678',network:'MTN',amount_minor:'10000'})).status,404);
+  await require('./commandLifecycle.cjs')({pool,base,token,bankA,bankB,cert,device,codec,root,call,browserGet,browserLogin,cookieA,bankPassword,envelope,record,second,nativeExecutable,first});
   await pool.query("UPDATE device_sync_registry_v2 SET expires_at=now()-interval '1 second' WHERE device_id=$1",[cert.device_id]);
   assert.equal((await call('/device/v2/deltas',original)).status,403);
   await pool.query("UPDATE device_sync_registry_v2 SET expires_at=now()+interval '1 day' WHERE device_id=$1",[cert.device_id]);
   assert.equal((await call(`/admin/v2/devices/${cert.device_id}/revoke`,{},token)).status,200);
   assert.equal((await call('/device/v2/deltas',original)).status,403);
   assert.equal((await bankRead(bankA.body.api_key_raw,route)).body.status,'REVOKED');
-  await pool.query("UPDATE institutions SET status='disabled' WHERE id=$1",[bankA.body.institution.id]);
+  await pool.query("UPDATE institutions SET status='disabled' WHERE institution_id=$1",[bankA.body.institution.id]);
   assert.equal((await browserGet('/portal/v2/me')).status,401);
   assert.equal((await bankRead(bankA.body.api_key_raw,route)).status,403);
   await pool.query("UPDATE admin_users SET status='DISABLED' WHERE email='operator@example.test'");

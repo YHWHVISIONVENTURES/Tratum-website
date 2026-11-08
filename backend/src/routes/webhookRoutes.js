@@ -12,7 +12,7 @@ router.put('/admin/v2/institutions/:institutionId/webhook',require('../middlewar
   try {delivery.target(url);}catch{return res.status(400).json({error:'WEBHOOK_TARGET_NOT_ALLOWED'});}
   const encrypted=delivery.encrypt(secret);
   const found=await pool.query(`INSERT INTO institution_webhook_endpoints(institution_id,url,secret_ciphertext)
-   SELECT id::text,$2,$3 FROM institutions WHERE id::text=$1 AND status='active'
+   SELECT institution_id::text,$2,$3 FROM institutions WHERE institution_id::text=$1 AND status='active'
    ON CONFLICT(institution_id) DO UPDATE SET url=EXCLUDED.url,secret_ciphertext=EXCLUDED.secret_ciphertext,enabled=true,updated_at=now()
    RETURNING institution_id,url,enabled`,[req.params.institutionId,url,encrypted]);
   if(!found.rowCount)return res.status(404).json({error:'INSTITUTION_NOT_FOUND'});

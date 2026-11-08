@@ -6,6 +6,7 @@
   "scripts": {
     "test": "node --test",
     "start": "node src/admin-app.js",
+    "start:local": "node scripts/run-local.js",
     "test:e2e": "node scripts/run-device-e2e.js",
     "worker:webhooks": "node src/workers/webhookWorker.js",
     "db:plan": "node scripts/migrate.js",

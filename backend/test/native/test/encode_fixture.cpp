@@ -1,4 +1,5 @@
 #include "BackendDeltaCodec.h"
+#include "BackendTrustLifecycle.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -7,6 +8,18 @@ static std::vector<uint8_t> decode(const std::string& value){
  std::vector<uint8_t> out;for(size_t i=0;i<value.size();i+=2)out.push_back(static_cast<uint8_t>(std::stoul(value.substr(i,2),nullptr,16)));return out;
 }
 int main(int argc,char**argv){
+ if(argc==8 && std::string(argv[1])=="--state"){
+  auto id=decode(argv[2]);if(id.size()!=8)return 3;uint8_t out[TratumTrustV3::STATE_BYTES];
+  if(!TratumTrustV3::encodeState(id.data(),std::stoul(argv[3]),std::stoul(argv[4]),std::stoul(argv[5]),std::stoull(argv[6]),std::stoul(argv[7]),out))return 4;
+  const char digits[]="0123456789abcdef";for(auto value:out)std::cout<<digits[value>>4]<<digits[value&15];return 0;
+ }
+ if(argc==15 && std::string(argv[1])=="--transition"){
+  auto id=decode(argv[2]),challenge=decode(argv[3]),root=decode(argv[10]),oldKey=decode(argv[11]),newKey=decode(argv[12]),issuer=decode(argv[13]);
+  if(id.size()!=8||challenge.size()!=32||root.size()!=32||oldKey.size()!=64||newKey.size()!=64||issuer.size()!=32)return 3;
+  uint8_t out[TratumTrustV3::TRANSITION_BYTES];
+  if(!TratumTrustV3::encode(id.data(),challenge.data(),std::stoul(argv[4]),std::stoul(argv[5]),std::stoul(argv[6]),std::stoul(argv[7]),std::stoul(argv[8]),std::stoul(argv[9]),root.data(),oldKey.data(),newKey.data(),issuer.data(),std::stoul(argv[14]),out))return 4;
+  const char digits[]="0123456789abcdef";for(auto value:out)std::cout<<digits[value>>4]<<digits[value&15];return 0;
+ }
  if(argc==5 && std::string(argv[1])=="--enroll") {
   auto challenge=decode(argv[2]),pub=decode(argv[3]),issuer=decode(argv[4]);
   if(challenge.size()!=32 || pub.size()!=64 || issuer.size()!=32)return 3;

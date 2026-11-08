@@ -45,6 +45,7 @@ exports.depositToNode = async (req, res) => {
     assertAmount(amount);
 
     await client.query('BEGIN');
+    await require('../services/deviceLifecycle').assertCurrentTrust(client,device_id);
 
     // -------------------------------------
     // DEVICE + ISSUER LOCK
@@ -266,6 +267,7 @@ exports.redeemFromNode = async (req, res) => {
     assertAmount(amount);
 
     await client.query('BEGIN');
+    await require('../services/deviceLifecycle').assertCurrentTrust(client,device_id);
 
     // -------------------------------------
     // DEVICE LOCK
